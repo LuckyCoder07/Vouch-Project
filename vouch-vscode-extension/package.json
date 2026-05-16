@@ -63,7 +63,7 @@
       "properties": {
         "vouch.apiKey": {
           "type": "string",
-          "default": "",
+          "default": "caefec4ab279dd1b92d2454f8fcfda1d5b031418a2cf8020fda1882017c31f7c",
           "description": "Your Vouch API key from the dashboard"
         },
         "vouch.apiUrl": {

@@ -479,8 +479,9 @@ async def api_health():
 # --- Phase 3: GitHub OAuth Endpoints ---
 
 @app.get("/api/github/connect")
-async def github_connect():
-    state = secrets.token_hex(16)
+async def github_connect(user_id: str):
+    # Store user_id in state to retrieve it in callback
+    state = f"{user_id}:{secrets.token_hex(8)}"
     authorize_url = github_oauth.get_authorize_url(state)
     return {
         "authorize_url": authorize_url,
@@ -490,6 +491,11 @@ async def github_connect():
 @app.get("/api/github/callback")
 async def github_callback(code: str, state: str):
     try:
+        # Extract user_id from state
+        user_id = state.split(':')[0] if ':' in state else None
+        if not user_id:
+            raise HTTPException(status_code=400, detail="Invalid state parameter")
+
         token_data = await github_oauth.exchange_code(code)
         access_token = token_data.get('access_token')
         if not access_token:
@@ -498,9 +504,9 @@ async def github_callback(code: str, state: str):
         github_user = await github_oauth.get_github_user(access_token)
         
         db = require_supabase()
-        # Note: In a real app, you'd link this to the current user_id. 
-        # For now, we upsert based on github_id.
+        # Link to the user_id from state
         db.table('github_connections').upsert({
+            'user_id': user_id,
             'github_id': github_user['id'],
             'github_login': github_user['login'],
             'access_token': access_token
@@ -515,17 +521,17 @@ async def github_callback(code: str, state: str):
 @app.get("/api/github/repos")
 async def github_repos(user_id: str):
     db = require_supabase()
-    # Find connection for this user (assuming user_id linkage exists)
     result = db.table('github_connections').select('*').eq('user_id', user_id).execute()
     if not result.data:
-        # Fallback check by github_id or login if user_id not yet linked
         raise HTTPException(status_code=404, detail="GitHub account not connected")
         
-    access_token = result.data[0]['access_token']
+    connection = result.data[0]
+    access_token = connection['access_token']
     repos = await github_oauth.get_user_repos(access_token)
     return {
         "repos": repos,
-        "count": len(repos)
+        "count": len(repos),
+        "github_login": connection.get('github_login')
     }
 
 @app.post("/api/github/disconnect")

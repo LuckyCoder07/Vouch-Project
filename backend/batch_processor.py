@@ -81,6 +81,10 @@ class BatchProcessor:
                            and d != '__pycache__']
                 
                 for filename in files:
+                    # Skip macOS metadata files and hidden files
+                    if filename.startswith('._') or filename.startswith('.'):
+                        continue
+
                     ext = os.path.splitext(filename)[1].lower()
                     if ext not in SUPPORTED_EXTENSIONS:
                         results.append({
@@ -112,6 +116,7 @@ class BatchProcessor:
                                 'verification_code': existing.data[0]['verification_code'],
                                 'reason': 'Already in ledger'
                             })
+                            successful += 1
                             continue
 
                         # Generate verification code
@@ -122,6 +127,10 @@ class BatchProcessor:
 
                         timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
+                        # Map extension to language name
+                        lang_map = {'.py': 'python', '.java': 'java', '.cpp': 'cpp', '.txt': 'text'}
+                        language = lang_map.get(ext, ext.lstrip('.'))
+
                         # Insert into submissions
                         supabase.table('submissions').insert({
                             'student_name': student_name,
@@ -129,9 +138,11 @@ class BatchProcessor:
                             'structural_hash': structural_hash,
                             'raw_hash': raw_hash,
                             'canonical_string': canonical_string,
-                            'language': ext.lstrip('.'),
+                            'language': language,
                             'user_id': user_id,
                             'verification_code': verification_code,
+                            'submitted_at': timestamp,
+                            'batch_code': batch_code,
                             'anchored': False
                         }).execute()
 

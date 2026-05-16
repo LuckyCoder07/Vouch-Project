@@ -82,8 +82,9 @@ export default function Profile() {
           const data = await res.json();
           setGithubConnected(true);
           setGithubRepos(data.repos || []);
-          // Try to derive login from connection if needed or repos
-          if (data.repos?.length > 0) {
+          if (data.github_login) {
+            setGithubLogin(data.github_login);
+          } else if (data.repos?.length > 0) {
             setGithubLogin(data.repos[0].full_name.split('/')[0]);
           }
         }
@@ -104,8 +105,9 @@ export default function Profile() {
   }, []);
 
   const handleConnectGitHub = async () => {
+    if (!user?.id) return;
     try {
-      const res = await fetch(`/api/github/connect`);
+      const res = await fetch(`/api/github/connect?user_id=${user.id}`);
       const data = await res.json();
       if (data.authorize_url) {
         window.location.href = data.authorize_url;

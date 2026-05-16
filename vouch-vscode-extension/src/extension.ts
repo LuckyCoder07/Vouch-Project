@@ -25,8 +25,20 @@ export function activate(context: vscode.ExtensionContext) {
     let vouchFile = vscode.commands.registerCommand('vouch.vouchFile', async () => {
         // Read latest settings
         const config = vscode.workspace.getConfiguration('vouch');
-        const apiKey = config.get<string>('apiKey');
+        let apiKey = config.get<string>('apiKey');
         const apiUrl = config.get<string>('apiUrl', 'http://localhost:8000');
+
+        if (!apiKey) {
+            const setKey = "Set API Key";
+            const choice = await vscode.window.showErrorMessage(
+                "Vouch API key is not configured. Please set it in settings.",
+                setKey
+            );
+            if (choice === setKey) {
+                vscode.commands.executeCommand('workbench.action.openSettings', 'vouch.apiKey');
+            }
+            return;
+        }
 
         const editor = vscode.window.activeTextEditor;
         if (!editor) {

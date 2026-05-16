@@ -10,7 +10,8 @@ import {
   Copy, 
   ExternalLink,
   Loader2,
-  ArrowRight
+  ArrowRight,
+  RefreshCcw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
