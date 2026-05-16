@@ -10,12 +10,15 @@ import {
   X,
   Award,
   Info,
-  Clock
+  Clock,
+  FolderArchive,
+  GitBranch
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const navigation = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+  { name: 'Batch Vouch', icon: FolderArchive, path: '/batch' },
   { name: 'Verification', icon: ShieldCheck, path: '/verification' },
   { name: 'History', icon: Clock, path: '/history' },
   { name: 'Certificates', icon: Award, path: '/certificates' },

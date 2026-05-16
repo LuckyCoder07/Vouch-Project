@@ -111,7 +111,7 @@ class BlockchainAnchor:
         }
 
         signed = self.w3.eth.account.sign_transaction(tx, self.private_key)
-        tx_hash = self.w3.eth.send_raw_transaction(signed.rawTransaction)
+        tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
         
         logger.info(f"Transaction sent: {tx_hash.hex()}. Waiting for receipt...")
         

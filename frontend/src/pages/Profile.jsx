@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   User, Mail, Building, Award, FileBadge, TrendingUp, FileText, ArrowRight, Download,
-  Pen, Save, Github, Globe, RefreshCcw, X, Camera, Briefcase, MessageSquare, CheckCircle, AlertCircle
+  Pen, Save, Github, Globe, RefreshCcw, X, Camera, Briefcase, MessageSquare, CheckCircle, AlertCircle,
+  ChevronDown, ChevronUp, ExternalLink
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -38,6 +39,12 @@ export default function Profile() {
     name: '', institution: '', role: 'Student', bio: '', github_username: '', website: ''
   });
 
+  const [githubConnected, setGithubConnected] = useState(false);
+  const [githubLogin, setGithubLogin] = useState(null);
+  const [githubRepos, setGithubRepos] = useState([]);
+  const [showRepos, setShowRepos] = useState(false);
+  const [githubLoading, setGithubLoading] = useState(false);
+
   useEffect(() => {
     const fetchStats = async () => {
       if (!user?.id) return;
@@ -64,6 +71,69 @@ export default function Profile() {
     };
     fetchStats();
   }, [user?.id]);
+
+  useEffect(() => {
+    const checkGitHub = async () => {
+      if (!user?.id) return;
+      try {
+        const res = await fetch(`/api/github/repos?user_id=${user.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setGithubConnected(true);
+          setGithubRepos(data.repos || []);
+          // Try to derive login from connection if needed or repos
+          if (data.repos?.length > 0) {
+            setGithubLogin(data.repos[0].full_name.split('/')[0]);
+          }
+        }
+      } catch (err) {
+        console.error("GitHub check failed", err);
+      }
+    };
+    checkGitHub();
+  }, [user?.id]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('github') === 'connected') {
+      setGithubConnected(true);
+      toast.success("GitHub connected successfully!");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  const handleConnectGitHub = async () => {
+    try {
+      const res = await fetch(`/api/github/connect`);
+      const data = await res.json();
+      if (data.authorize_url) {
+        window.location.href = data.authorize_url;
+      }
+    } catch (err) {
+      toast.error("Failed to initiate GitHub connection");
+    }
+  };
+
+  const handleDisconnectGitHub = async () => {
+    if (!user?.id) return;
+    setGithubLoading(true);
+    try {
+      const res = await fetch(`/api/github/disconnect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id })
+      });
+      if (res.ok) {
+        setGithubConnected(false);
+        setGithubRepos([]);
+        toast.success("GitHub disconnected.");
+      }
+    } catch (err) {
+      toast.error("Failed to disconnect GitHub");
+    } finally {
+      setGithubLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (userProfile) {
@@ -305,6 +375,99 @@ export default function Profile() {
           </div>
         </div>
       )}
+
+      {/* ── GITHUB INTEGRATION ── */}
+      <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-xl overflow-hidden">
+        <div className="p-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+              <Github size={20} className="text-gray-900 dark:text-white" /> GitHub Integration
+            </h3>
+            {githubConnected && (
+              <span className="flex items-center gap-1.5 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[10px] font-black uppercase rounded-lg">
+                <CheckCircle size={12} /> Connected
+              </span>
+            )}
+          </div>
+
+          {!githubConnected ? (
+            <div className="flex flex-col items-center py-10 text-center">
+              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-3xl flex items-center justify-center text-gray-400 mb-6">
+                <Github size={40} />
+              </div>
+              <h4 className="text-lg font-bold text-gray-900 dark:text-white">Connect your GitHub account</h4>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-sm mb-8">
+                Auto-vouch commits and verify repositories directly through Vouch.
+              </p>
+              <button
+                onClick={handleConnectGitHub}
+                className="px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20 transition active:scale-95 text-sm uppercase tracking-widest"
+              >
+                Connect GitHub
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-900/30 p-6 rounded-3xl border border-gray-100 dark:border-gray-700">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-green-500 text-white rounded-2xl flex items-center justify-center">
+                    <Github size={24} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Account Linked</p>
+                    <p className="font-bold text-gray-900 dark:text-white">@{githubLogin || 'User'}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleDisconnectGitHub}
+                  disabled={githubLoading}
+                  className="px-6 py-2.5 text-red-600 font-bold text-xs hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition"
+                >
+                  {githubLoading ? 'Disconnecting...' : 'Disconnect'}
+                </button>
+              </div>
+
+              <div className="border-t border-gray-50 dark:border-gray-700 pt-6">
+                <button
+                  onClick={() => setShowRepos(!showRepos)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <span className="font-bold text-gray-900 dark:text-white">Your Repositories ({githubRepos.length})</span>
+                  {showRepos ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </button>
+
+                {showRepos && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 animate-in slide-in-from-top-2 duration-300">
+                    {githubRepos.length > 0 ? (
+                      githubRepos.map(repo => (
+                        <div key={repo.full_name} className="p-5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl hover:border-blue-200 dark:hover:border-blue-900 transition-all shadow-sm group">
+                          <div className="flex items-start justify-between mb-3">
+                            <h5 className="font-bold text-gray-900 dark:text-white truncate group-hover:text-blue-600 transition">{repo.name}</h5>
+                            <a href={repo.html_url} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                              <ExternalLink size={14} />
+                            </a>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 mb-3">
+                            <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 text-[9px] font-black uppercase tracking-widest rounded-md">{repo.language}</span>
+                            {repo.private ? (
+                              <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 text-[9px] font-black uppercase tracking-widest rounded-md">Private</span>
+                            ) : (
+                              <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 text-[9px] font-black uppercase tracking-widest rounded-md">Public</span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Updated {new Date(repo.updated_at).toLocaleDateString()}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-2 py-10 text-center text-gray-400 font-bold">No repositories found.</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* ── STATS + ACTIVITY ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -17,6 +17,7 @@ import VScoreDocs from "./pages/VScoreDocs";
 import VScore from "./pages/VScore";
 import PublicVerify from "./pages/PublicVerify";
 import History from "./pages/History";
+import BatchUpload from "./pages/BatchUpload";
 
 function AppRoutes() {
   const { isAuthenticated, loading, logout } = useAuth();
@@ -51,6 +52,7 @@ function AppRoutes() {
       >
         <Route index element={<Navigate to="/dashboard" />} />
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="batch" element={<BatchUpload />} />
         <Route path="history" element={<History />} />
         <Route path="verification" element={<Verification />} />
         <Route path="how-it-works" element={<HowItWorks />} />
