@@ -8,6 +8,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
 import Skeleton from '../components/ui/Skeleton';
+import Avatar from '../components/ui/Avatar';
 import { updateProfile } from '../lib/supabase';
 
 const ROLES = [
@@ -219,8 +220,6 @@ export default function Profile() {
     }
   };
 
-  const avatarSeed = user?.email || 'vouch';
-  const avatarUrl = userProfile?.avatar_url || user?.user_metadata?.avatar_url || null;
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 pb-12 animate-in fade-in duration-500">
@@ -242,14 +241,9 @@ export default function Profile() {
         {/* Content row */}
         <div className="px-8 pb-8">
           <div className="flex flex-col sm:flex-row sm:items-end gap-6 -mt-12 mb-8">
-            {/* Avatar */}
             <div className="relative shrink-0">
-              <div className="w-24 h-24 rounded-[1.5rem] border-4 border-white dark:border-gray-800 overflow-hidden shadow-xl bg-white dark:bg-gray-900">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <img src={`https://api.dicebear.com/8.x/identicon/svg?seed=${avatarSeed}`} alt="Avatar" className="w-full h-full object-cover" />
-                )}
+              <div className="w-24 h-24 rounded-[1.5rem] border-4 border-white dark:border-gray-800 overflow-hidden shadow-xl">
+                <Avatar seed={user?.email} />
               </div>
             </div>
 

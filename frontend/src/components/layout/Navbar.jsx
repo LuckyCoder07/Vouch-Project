@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
+import Avatar from '../ui/Avatar';
 
 const SEARCH_ITEMS = [
   { label: 'Dashboard', description: 'Notary workspace', path: '/dashboard', icon: 'LayoutDashboard' },
@@ -351,11 +352,7 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
                 </span>
               </span>
               <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center border border-blue-200 dark:border-blue-800 overflow-hidden shadow-sm">
-                {(profile?.avatar_url || user?.user_metadata?.avatar_url) ? (
-                  <img src={profile?.avatar_url || user?.user_metadata?.avatar_url} alt="profile" className="w-full h-full object-cover" />
-                ) : (
-                  <User className="h-6 w-6 text-blue-600" />
-                )}
+                <Avatar seed={user?.email} />
               </div>
             </button>
             
