@@ -43,8 +43,35 @@ export default function Dashboard() {
   const [hashResult, setHashResult] = useState(null);
   const [storeResult, setStoreResult] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [assignmentResult, setAssignmentResult] = useState(null);
+
+  const [userOrgs, setUserOrgs] = useState([]);
+  const [selectedOrgId, setSelectedOrgId] = useState('');
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState('');
+  const [orgAssignments, setOrgAssignments] = useState([]);
 
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetch(`/api/orgs?user_id=${user.id}`)
+        .then(res => res.json())
+        .then(data => setUserOrgs(data.orgs || []))
+        .catch(console.error);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (selectedOrgId) {
+      fetch(`/api/assignments?org_id=${selectedOrgId}`)
+        .then(res => res.json())
+        .then(data => setOrgAssignments(data.assignments || []))
+        .catch(console.error);
+    } else {
+      setOrgAssignments([]);
+      setSelectedAssignmentId('');
+    }
+  }, [selectedOrgId]);
 
   // Derive author name from profile (auto-filled, no manual input)
   const authorName = profile?.name || user?.email?.split('@')[0] || 'Vouch User';
@@ -74,6 +101,7 @@ export default function Dashboard() {
     setHashResult(null);
     setStoreResult(null);
     setErrorMessage(null);
+    setAssignmentResult(null);
   };
 
   // Helper: delay to make the terminal animation visible
@@ -138,7 +166,9 @@ export default function Dashboard() {
             canonical_string: hashData.canonical_string,
             language: hashData.language,
             user_id: user?.id || null,
-            user_email: user?.email || null
+            user_email: user?.email || null,
+            org_id: selectedOrgId || null,
+            assignment_id: selectedAssignmentId || null
           })
         });
 
@@ -150,6 +180,30 @@ export default function Dashboard() {
         }
 
         setStoreResult(storeData);
+
+        if (selectedAssignmentId) {
+          try {
+            const submitRes = await fetch(`/api/assignments/${selectedAssignmentId}/submit`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+              },
+              body: JSON.stringify({ submission_id: storeData.id, user_id: user.id })
+            });
+            if (submitRes.ok) {
+              const submitData = await submitRes.json();
+              setAssignmentResult(submitData);
+            } else {
+              const errData = await submitRes.json();
+              throw new Error(errData.detail || "Failed to link to assignment");
+            }
+          } catch (e) {
+            console.error("Failed to link assignment", e);
+            throw e; // Rethrow so it bubbles up to the main catch block and displays to the user
+          }
+        }
+
         await delay(400);
         setProgress(100);
         setUploadState('success');
@@ -228,6 +282,7 @@ export default function Dashboard() {
     setErrorMessage(null);
     setHashResult(null);
     setStoreResult(null);
+    setAssignmentResult(null);
   };
 
   const isUploading = uploadState === 'uploading';
@@ -272,6 +327,48 @@ export default function Dashboard() {
         </div>
 
         <div className="p-8 md:p-12">
+          {activeTab === 'vouch' && uploadState === 'idle' && !selectedFile && (
+            <div className="mb-6 space-y-4 max-w-2xl mx-auto">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Submit to Assignment (optional)</label>
+                <select 
+                  value={selectedOrgId} 
+                  onChange={(e) => { setSelectedOrgId(e.target.value); setSelectedAssignmentId(''); }}
+                  className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  <option value="">Personal submission (no org)</option>
+                  {userOrgs.map(org => (
+                    <option key={org.organizations.id} value={org.organizations.id}>
+                      {org.organizations.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {selectedOrgId && orgAssignments.length > 0 && (
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Select Assignment</label>
+                  <select 
+                    value={selectedAssignmentId} 
+                    onChange={(e) => setSelectedAssignmentId(e.target.value)}
+                    className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                  >
+                    <option value="">No specific assignment</option>
+                    {orgAssignments.map(a => {
+                      const isOverdue = a.is_overdue;
+                      const disableLate = isOverdue && !a.allow_late;
+                      return (
+                        <option key={a.id} value={a.id} disabled={disableLate}>
+                          {a.title} {a.deadline ? `— due ${new Date(a.deadline).toLocaleString()}` : ''} {isOverdue ? '(Overdue)' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+
           {uploadState === 'idle' && !selectedFile ? (
             <div
               onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
@@ -342,7 +439,22 @@ export default function Dashboard() {
                     {activeTab === 'vouch' ? (
                       <>
                         <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-2">Successfully Notarized</h3>
-                        <p className="text-gray-500 dark:text-gray-400 mb-8">Submission permanently anchored to the ledger.</p>
+                        <p className="text-gray-500 dark:text-gray-400 mb-4">Submission permanently anchored to the ledger.</p>
+                        {assignmentResult?.is_late && (
+                          <div className="mb-6 p-4 bg-orange-50 border border-orange-200 text-orange-800 rounded-xl font-medium text-left">
+                            ⚠️ This submission was recorded but marked as LATE.
+                          </div>
+                        )}
+                        {storeResult?.plagiarism_detected && (
+                          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl font-medium text-left">
+                            🚨 Warning: A structural match with another submission was detected. An instructor has been notified.
+                          </div>
+                        )}
+                        {assignmentResult && !assignmentResult.is_late && (
+                          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl font-medium text-left">
+                            📚 Linked to assignment successfully.
+                          </div>
+                        )}
                       </>
                     ) : (
                       <>

@@ -101,6 +101,14 @@ except Exception as exc:
 mailer = Mailer()
 github_oauth = GitHubOAuth()
 batch_processor = BatchProcessor()
+
+from organizations import OrgManager
+from assignments import AssignmentManager
+from plagiarism import PlagiarismDetector
+
+org_manager      = OrgManager()
+assignment_mgr   = AssignmentManager()
+plagiarism_det   = PlagiarismDetector()
 scheduler = BackgroundScheduler() if BackgroundScheduler is not None else None
 run_anchor_job = None
 anchor_init_error: Optional[str] = None
@@ -143,6 +151,8 @@ class StoreRequest(BaseModel):
     language: Optional[str] = None
     user_id: Optional[str] = None
     user_email: Optional[str] = None
+    org_id: Optional[str] = None
+    assignment_id: Optional[str] = None
 
 class CertificateRequest(BaseModel):
     student_name: str
@@ -232,8 +242,8 @@ async def api_store(req: StoreRequest, authorization: Optional[str] = Header(Non
                 print(f"Warning: Profile auto-creation failed: {e}")
                 # We continue anyway, as the next insert will fail if FK is truly missing
         
-        # 2. Check for duplicates (Use 'db' service role to ensure we can see all records)
-        result = db.table("submissions").select("id").eq("structural_hash", req.structural_hash).execute()
+        # 2. Check for exact duplicates (Use 'db' service role to ensure we can see all records)
+        result = db.table("submissions").select("id").eq("raw_hash", req.raw_hash).execute()
         if result.data:
             raise HTTPException(status_code=409, detail="Already recorded in the ledger.")
 
@@ -242,7 +252,7 @@ async def api_store(req: StoreRequest, authorization: Optional[str] = Header(Non
 
         # Attempt insert with SERVICE ROLE to bypass RLS restrictions
         # The backend is the source of truth for the ledger.
-        db.table("submissions").insert({
+        insert_res = db.table("submissions").insert({
             "student_name": req.student_name,
             "file_name": req.file_name,
             "structural_hash": req.structural_hash,
@@ -251,8 +261,10 @@ async def api_store(req: StoreRequest, authorization: Optional[str] = Header(Non
             "language": req.language,
             "user_id": user_id,
             "verification_code": verification_code,
-            "submitted_at": submitted_at
+            "submitted_at": submitted_at,
+            "org_id": req.org_id
         }).execute()
+        inserted_id = insert_res.data[0]['id']
         
         # --- Integration Steps ---
         
@@ -315,13 +327,35 @@ async def api_store(req: StoreRequest, authorization: Optional[str] = Header(Non
             except:
                 pass
 
+        if os.getenv('PLAGIARISM_CHECK_ENABLED', 'true') == 'true':
+            try:
+                plag_result = plagiarism_det.check_submission(
+                    structural_hash = req.structural_hash,
+                    student_name    = req.student_name,
+                    submission_id   = inserted_id,
+                    user_id         = user_id,
+                    org_id          = req.org_id,
+                    assignment_id   = req.assignment_id
+                )
+                if plag_result['plagiarism_detected']:
+                    logger.warning('Plagiarism detected for %s',
+                                   req.student_name)
+            except Exception as e:
+                logger.warning('Plagiarism check failed: %s', e)
+                plag_result = {'plagiarism_detected': False}
+        else:
+            plag_result = {'plagiarism_detected': False}
+
         return {
             "success": True,
+            "id": inserted_id,
             "message": "Recorded in ledger.",
             "verification_code": verification_code,
             "submitted_at": submitted_at,
             "signed": bool(sig),
-            "payload_hash": sig.get('payload_hash', '')
+            "payload_hash": sig.get('payload_hash', ''),
+            "plagiarism_detected": plag_result['plagiarism_detected'],
+            "plagiarism_flags":    plag_result.get('flags', [])
         }
     except Exception as e:
         print(f"Critical error in api_store: {str(e)}")
@@ -670,6 +704,291 @@ async def extension_vouch(req: dict):
             "verification_code": verification_code,
             "submitted_at": submitted_at
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- ORGANIZATION ENDPOINTS ---
+
+@app.post("/api/orgs")
+async def create_org(req: dict):
+    try:
+        org = org_manager.create_org(
+            name=req.get('name'),
+            owner_id=req.get('owner_id'),
+            org_type=req.get('org_type', 'classroom'),
+            description=req.get('description', '')
+        )
+        return org
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/orgs")
+async def get_orgs(user_id: str):
+    try:
+        orgs = org_manager.get_user_orgs(user_id)
+        return {"orgs": orgs}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/orgs/join")
+async def join_org(req: dict):
+    try:
+        org = org_manager.join_org(req.get('invite_code'), req.get('user_id'))
+        return {"success": True, "org": org}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/orgs/{org_id}/members")
+async def get_org_members(org_id: str):
+    try:
+        members = org_manager.get_org_members(org_id)
+        return {"members": members}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/orgs/{org_id}/submissions")
+async def get_org_submissions(org_id: str, assignment_id: Optional[str] = None):
+    try:
+        submissions = org_manager.get_org_submissions(org_id, assignment_id)
+        return {"submissions": submissions, "count": len(submissions)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/orgs/{org_id}/members/{user_id}")
+async def remove_member(org_id: str, user_id: str):
+    try:
+        org_manager.remove_member(org_id, user_id)
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/orgs/{org_id}/report")
+async def get_org_report(org_id: str):
+    try:
+        return org_manager.generate_org_report(org_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/orgs/{org_id}/invite")
+async def invite_to_org(org_id: str, req: dict):
+    try:
+        db = require_supabase()
+        org = db.table('organizations').select('name, invite_code').eq('id', org_id).execute().data[0]
+        mailer.send_org_invite(
+            to_email=req.get('email'),
+            org_name=org['name'],
+            invite_code=org['invite_code'],
+            invited_by=req.get('invited_by_name')
+        )
+        return {"sent": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/orgs/{org_id}")
+async def delete_org(org_id: str):
+    try:
+        org_manager.delete_org(org_id)
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- ASSIGNMENT ENDPOINTS ---
+
+@app.post("/api/assignments")
+async def create_assignment(req: dict):
+    try:
+        assignment = assignment_mgr.create_assignment(
+            org_id=req.get('org_id'),
+            created_by=req.get('created_by'),
+            title=req.get('title'),
+            description=req.get('description', ''),
+            deadline=req.get('deadline'),
+            allow_late=req.get('allow_late', False)
+        )
+        return assignment
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/assignments")
+async def get_assignments(org_id: str):
+    try:
+        assignments = assignment_mgr.get_org_assignments(org_id)
+        return {"assignments": assignments}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/assignments/{assignment_id}/submissions")
+async def get_assignment_submissions(assignment_id: str):
+    try:
+        return assignment_mgr.get_assignment_submissions(assignment_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/assignments/{assignment_id}/submit")
+async def submit_assignment(assignment_id: str, req: dict):
+    try:
+        result = assignment_mgr.submit_to_assignment(
+            assignment_id=assignment_id,
+            submission_id=req.get('submission_id'),
+            user_id=req.get('user_id')
+        )
+        return {"linked": result['linked'], "is_late": result['is_late']}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/assignments/{assignment_id}")
+async def update_assignment(assignment_id: str, req: dict):
+    try:
+        return assignment_mgr.update_assignment(assignment_id, req)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/assignments/{assignment_id}")
+async def delete_assignment(assignment_id: str):
+    try:
+        assignment_mgr.delete_assignment(assignment_id)
+        return {"deleted": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- PLAGIARISM ENDPOINTS ---
+
+@app.get("/api/plagiarism")
+async def get_plagiarism_flags(org_id: str, assignment_id: Optional[str] = None):
+    try:
+        flags = plagiarism_det.get_org_flags(org_id, assignment_id)
+        return {"flags": flags, "count": len(flags)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/plagiarism/{flag_id}/resolve")
+async def resolve_flag(flag_id: str, req: dict):
+    try:
+        return plagiarism_det.resolve_flag(
+            flag_id=flag_id,
+            reviewer_id=req.get('reviewer_id'),
+            status=req.get('status')
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- API KEY ENDPOINTS ---
+
+@app.post("/api/orgs/{org_id}/api-keys")
+async def create_api_key(org_id: str, req: dict):
+    try:
+        return org_manager.create_api_key(org_id, req.get('label'), req.get('created_by'))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/orgs/{org_id}/api-keys")
+async def get_api_keys(org_id: str):
+    try:
+        db = require_supabase()
+        keys = db.table('api_keys').select('id, key_preview, label, created_at, last_used, is_active').eq('org_id', org_id).execute().data
+        return keys
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/orgs/{org_id}/api-keys/{key_id}")
+async def revoke_api_key(org_id: str, key_id: str):
+    try:
+        org_manager.revoke_api_key(key_id)
+        return {"revoked": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- INSTITUTION API (external access) ---
+
+@app.post("/api/v1/verify")
+async def api_v1_verify(file: UploadFile = File(...), x_api_key: str = Header(...)):
+    try:
+        key_row = org_manager.validate_api_key(x_api_key)
+        if not key_row:
+            raise HTTPException(status_code=401, detail="Invalid API key")
+            
+        db = require_supabase()
+        suffix = ""
+        if file.filename:
+            _, ext = os.path.splitext(file.filename)
+            suffix = ext.lower()
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(await file.read())
+            tmp_path = tmp.name
+
+        try:
+            hasher = CodeHasher(tmp_path)
+            structural_hash = hasher.compute_structural_hash()
+            
+            result = db.table("submissions").select("*").eq("structural_hash", structural_hash).execute()
+            if not result.data:
+                return {
+                    "status": "not_found",
+                    "structural_hash": structural_hash,
+                    "message": "No matching record found in ledger."
+                }
+                
+            record = result.data[0]
+            return {
+                "status": "verified",
+                "structural_hash": structural_hash,
+                "student_name": record.get("student_name"),
+                "file_name": record.get("file_name"),
+                "submitted_at": record.get("submitted_at") or record.get("created_at"),
+                "verification_code": record.get("verification_code"),
+                "language": record.get("language"),
+                "org_name": key_row['organizations']['name']
+            }
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+    except VouchHashError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/vouch")
+async def api_v1_vouch(req: dict, x_api_key: str = Header(...)):
+    try:
+        key_row = org_manager.validate_api_key(x_api_key)
+        if not key_row:
+            raise HTTPException(status_code=401, detail="Invalid API key")
+            
+        db = require_supabase()
+        
+        # Check for duplicates
+        existing = db.table("submissions").select("verification_code, submitted_at").eq("structural_hash", req.get('structural_hash')).execute()
+        if existing.data:
+            raise HTTPException(status_code=409, detail="Already recorded in the ledger.")
+            
+        verification_code = generate_verification_code()
+        submitted_at = datetime.now(timezone.utc).isoformat()
+        
+        db.table("submissions").insert({
+            "student_name": req.get('student_name'),
+            "file_name": req.get('file_name'),
+            "structural_hash": req.get('structural_hash'),
+            "raw_hash": req.get('raw_hash'),
+            "language": req.get('language'),
+            "verification_code": verification_code,
+            "submitted_at": submitted_at,
+            "org_id": key_row['org_id']
+        }).execute()
+        
+        return {
+            "verification_code": verification_code,
+            "submitted_at": submitted_at,
+            "org_name": key_row['organizations']['name']
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

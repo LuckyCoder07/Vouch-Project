@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 
 import {
+  Building2,
   LayoutDashboard,
   ShieldCheck,
   HelpCircle,
@@ -21,6 +22,7 @@ const navigation = [
   { name: 'Batch Vouch', icon: FolderArchive, path: '/batch' },
   { name: 'Verification', icon: ShieldCheck, path: '/verification' },
   { name: 'History', icon: Clock, path: '/history' },
+  { name: 'Organization', icon: Building2, path: '/org' },
   { name: 'Certificates', icon: Award, path: '/certificates' },
   { name: 'How It Works', icon: HelpCircle, path: '/how-it-works' },
   { name: 'Know About Vouch', icon: Info, path: '/know-about-vouch' },

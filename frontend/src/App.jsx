@@ -18,9 +18,11 @@ import VScore from "./pages/VScore";
 import PublicVerify from "./pages/PublicVerify";
 import History from "./pages/History";
 import BatchUpload from "./pages/BatchUpload";
+import OrgDashboard from "./pages/OrgDashboard";
+import OrgReport from "./pages/OrgReport";
 
 function AppRoutes() {
-  const { isAuthenticated, loading, logout } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
 
   return (
     <Routes>
@@ -52,6 +54,8 @@ function AppRoutes() {
       >
         <Route index element={<Navigate to="/dashboard" />} />
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="org" element={<OrgDashboard />} />
+        <Route path="org/:orgId/report" element={<OrgReport />} />
         <Route path="batch" element={<BatchUpload />} />
         <Route path="history" element={<History />} />
         <Route path="verification" element={<Verification />} />

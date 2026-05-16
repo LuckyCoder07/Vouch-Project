@@ -132,6 +132,94 @@ class Mailer:
             logger.error(f"Resend API error for {to_email}: {str(e)}")
             return False
 
+    def send_raw_email(
+        self,
+        to_email: str,
+        subject:  str,
+        html:     str
+    ) -> bool:
+        """
+        Sends a raw HTML email with no attachment.
+        Used for plagiarism alerts and org invites.
+        """
+        if not self.api_key:
+            logger.info('Email skipped (no key): %s', to_email)
+            return False
+        try:
+            resend.Emails.send({
+                'from':    f'Vouch <{self.from_addr}>',
+                'to':      [to_email],
+                'subject': subject,
+                'html':    html
+            })
+            logger.info('Raw email sent to %s', to_email)
+            return True
+        except Exception as e:
+            logger.error('Email failed: %s', e)
+            return False
+
+    def send_org_invite(
+        self,
+        to_email:    str,
+        org_name:    str,
+        invite_code: str,
+        invited_by:  str
+    ) -> bool:
+        """
+        Sends an organization invite email with the 
+        invite code prominently displayed.
+        """
+        html = f"""
+        <div style="font-family:Arial,sans-serif;
+                    max-width:560px;margin:0 auto;
+                    padding:24px">
+          <div style="background:white;border-radius:12px;
+                      padding:32px;border:1px solid #e5e7eb">
+            <h2 style="color:#111827">
+              You've been invited to join 
+              <span style="color:#2563eb">{org_name}</span> 
+              on Vouch</h2>
+            <p style="color:#6b7280">
+              {invited_by} has invited you to join their 
+              organization on Vouch — the immutable code 
+              notary platform.</p>
+            <p style="font-size:13px;color:#6b7280;
+                      margin-bottom:4px;text-align:center">
+              Your Invite Code</p>
+            <div style="background:#f3f4f6;border-radius:8px;
+                        padding:16px;font-family:monospace;
+                        font-size:24px;text-align:center;
+                        letter-spacing:4px;color:#1e40af;
+                        font-weight:bold;margin:16px 0">
+              {invite_code}
+            </div>
+            <p style="color:#6b7280;font-size:13px;
+                      text-align:center">
+              Enter this code on your Vouch profile page 
+              under "Join Organization" to accept the invite.
+            </p>
+            <a href="http://localhost:5173/profile" 
+               style="display:block;text-align:center;
+                      background:#2563eb;color:white;
+                      padding:14px;border-radius:8px;
+                      text-decoration:none;font-weight:bold;
+                      margin:24px 0">
+              Go to Vouch
+            </a>
+            <p style="font-size:12px;color:#9ca3af;
+                      text-align:center">
+              Vouch — Immutable Code Notary
+            </p>
+          </div>
+        </div>
+        """
+        return self.send_raw_email(
+            to_email = to_email,
+            subject  = (f'You\'re invited to join '
+                        f'{org_name} on Vouch'),
+            html     = html
+        )
+
 if __name__ == '__main__':
     mailer = Mailer()
     # Test call using your verified Resend email address
