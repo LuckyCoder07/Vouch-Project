@@ -55,6 +55,18 @@ const faqs = [
   {
     question: "How do I get my certificate?",
     answer: "Upon successful verified upload to the ledger, a 'Download Certificate' button will immediately appear giving you a watermarked PDF. You can also re-download it anytime by using the Verify tab with your original file."
+  },
+  {
+    question: "How does Vouch integrate with VS Code?",
+    answer: "You can install our native VS Code Extension to 'Notarize Current File' with a single keyboard shortcut right from your editor. It uses an encrypted API key linked to your account, skipping the web dashboard completely."
+  },
+  {
+    question: "Is my source code stored on your servers?",
+    answer: "No. Your raw source code is stored only in temporary memory during the hash generation phase. Once the SHA3-256 hash is computed, the code is immediately discarded. Only the structural fingerprint and your name are recorded on the public ledger."
+  },
+  {
+    question: "How does V-Score work?",
+    answer: "Your V-Score builds your reputation. You earn 100 points for every unique file notarized, plus a 25-point 'Aging Bonus' for files on the ledger longer than 30 days. Higher V-Scores signify higher trust and long-term ownership of robust code logic."
   }
 ];
 

@@ -238,7 +238,7 @@ export default function History() {
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <h4 className="font-bold text-gray-900 dark:text-white truncate">{record.file_name}</h4>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${langStyle}`}>
+                    <span className={`px-2 py-0.5 rounded text-xs font-black uppercase tracking-wider ${langStyle}`}>
                       {record.language || 'Unknown'}
                     </span>
                     <AnchorBadge anchored={record.anchored} compact={true} />

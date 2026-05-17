@@ -164,8 +164,8 @@ export default function OrgReport() {
                {report.flags?.slice(0, 5).map(f => (
                  <div key={f.id} className="p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20">
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-[10px] font-black uppercase text-red-600 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full">High Match</span>
-                      <span className="text-[10px] font-medium text-gray-400">{format(new Date(f.flagged_at), 'MMM d')}</span>
+                      <span className="text-xs font-black uppercase text-red-600 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full">High Match</span>
+                      <span className="text-xs font-medium text-gray-400">{format(new Date(f.flagged_at), 'MMM d')}</span>
                     </div>
                     <p className="text-sm font-bold truncate">
                       {f.submission_id_1?.student_name} <span className="text-gray-400 font-normal mx-1">&</span> {f.submission_id_2?.student_name}
@@ -189,7 +189,7 @@ export default function OrgReport() {
           <h2 className="text-xl font-black mb-6">Assignments Overview</h2>
           <div className="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-800">
             <table className="w-full text-sm text-left">
-              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest text-[10px]">
+              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest text-xs">
                 <tr>
                   <th className="px-6 py-4">Title</th>
                   <th className="px-6 py-4">Deadline</th>
@@ -218,7 +218,7 @@ export default function OrgReport() {
                           <div className="w-24 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                             <div className="h-full bg-blue-600" style={{ width: `${Math.min(completionRate, 100)}%` }}></div>
                           </div>
-                          <span className="font-bold text-[10px]">{completionRate}%</span>
+                          <span className="font-bold text-xs">{completionRate}%</span>
                         </div>
                       </td>
                     </tr>
@@ -234,7 +234,7 @@ export default function OrgReport() {
           <h2 className="text-xl font-black mb-6">Submission Archive</h2>
           <div className="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-800">
             <table className="w-full text-sm text-left">
-              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest text-[10px]">
+              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest text-xs">
                 <tr>
                   <th className="px-6 py-4">Student</th>
                   <th className="px-6 py-4">Resource</th>
@@ -249,10 +249,10 @@ export default function OrgReport() {
                     <td className="px-6 py-4 font-bold">{s.student_name}</td>
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900 dark:text-gray-100">{s.file_name}</div>
-                      <div className="text-[10px] text-gray-400 uppercase font-black">{s.language}</div>
+                      <div className="text-xs text-gray-400 uppercase font-black">{s.language}</div>
                     </td>
                     <td className="px-6 py-4 text-gray-500">{format(new Date(s.submitted_at), 'MMM d, p')}</td>
-                    <td className="px-6 py-4 font-mono text-[10px] text-gray-400">{s.verification_code}</td>
+                    <td className="px-6 py-4 font-mono text-xs text-gray-400">{s.verification_code}</td>
                     <td className="px-6 py-4 text-center">
                       <span className={`px-3 py-1 text-[9px] uppercase font-black rounded-full border ${s.is_late ? 'bg-orange-100 text-orange-800 border-orange-200' : 'bg-green-100 text-green-800 border-green-200'}`}>
                         {s.is_late ? 'Late' : 'Punctual'}

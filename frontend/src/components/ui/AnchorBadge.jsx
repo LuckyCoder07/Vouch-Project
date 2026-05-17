@@ -4,12 +4,12 @@ import { Link2, Clock, ExternalLink } from 'lucide-react';
 export default function AnchorBadge({ anchored, txHash, compact = false }) {
   if (compact) {
     return anchored ? (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-800/50">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-xs font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-800/50">
         <Link2 size={10} />
         Anchored
       </span>
     ) : (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-wider border border-slate-200 dark:border-slate-700">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 text-xs font-black uppercase tracking-wider border border-slate-200 dark:border-slate-700">
         <Clock size={10} />
         Pending
       </span>
@@ -39,7 +39,7 @@ export default function AnchorBadge({ anchored, txHash, compact = false }) {
         <Clock size={16} />
         Pending Blockchain Anchor
       </div>
-      <p className="text-[10px] text-slate-400 font-medium italic">
+      <p className="text-xs text-slate-400 font-medium italic">
         Anchored every 24 hours on Polygon Amoy
       </p>
     </div>

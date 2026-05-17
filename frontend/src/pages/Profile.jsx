@@ -255,7 +255,7 @@ export default function Profile() {
                 <h2 className="text-2xl font-black text-gray-900 dark:text-white">
                   {userProfile?.name || 'Vouch Member'}
                 </h2>
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${getRankStyle(stats.rank)}`}>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest ${getRankStyle(stats.rank)}`}>
                   <Award size={12} /> {stats.rank}
                 </span>
               </div>
@@ -380,7 +380,7 @@ export default function Profile() {
               <Github size={20} className="text-gray-900 dark:text-white" /> GitHub Integration
             </h3>
             {githubConnected && (
-              <span className="flex items-center gap-1.5 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[10px] font-black uppercase rounded-lg">
+              <span className="flex items-center gap-1.5 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-black uppercase rounded-lg">
                 <CheckCircle size={12} /> Connected
               </span>
             )}
@@ -451,7 +451,7 @@ export default function Profile() {
                               <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 text-[9px] font-black uppercase tracking-widest rounded-md">Public</span>
                             )}
                           </div>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Updated {new Date(repo.updated_at).toLocaleDateString()}</p>
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Updated {new Date(repo.updated_at).toLocaleDateString()}</p>
                         </div>
                       ))
                     ) : (
@@ -472,14 +472,14 @@ export default function Profile() {
           <div onClick={() => navigate('/vscore')} className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1 transition-all">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 rounded-bl-full group-hover:scale-110 transition-transform" />
             <TrendingUp className="text-blue-600 mb-2" size={28} />
-            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Reputation Score</h4>
+            <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Reputation Score</h4>
             <p className="text-5xl font-black text-gray-900 dark:text-white tracking-tighter">{isLoadingStats ? '---' : stats.vScore}</p>
             <div className="mt-6 flex items-center gap-1.5 text-xs font-bold text-blue-600"><span>Analyze Score</span><ArrowRight size={14} /></div>
           </div>
           <div onClick={() => navigate('/history')} className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1 transition-all">
             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/5 rounded-bl-full group-hover:scale-110 transition-transform" />
             <FileBadge className="text-indigo-600 mb-2" size={28} />
-            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Decentralized Assets</h4>
+            <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Decentralized Assets</h4>
             <p className="text-5xl font-black text-gray-900 dark:text-white tracking-tighter">{isLoadingStats ? '---' : stats.contributions}</p>
             <div className="mt-6 flex items-center gap-1.5 text-xs font-bold text-indigo-600"><span>View History</span><ArrowRight size={14} /></div>
           </div>
@@ -505,8 +505,8 @@ export default function Profile() {
                       <div className="min-w-0">
                         <p className="font-bold text-gray-900 dark:text-white truncate text-lg">{record.file_name}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{new Date(record.submitted_at).toLocaleDateString()}</span>
-                          <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">· {record.language || 'Code'}</span>
+                          <span className="text-xs font-black text-gray-400 uppercase tracking-widest">{new Date(record.submitted_at).toLocaleDateString()}</span>
+                          <span className="text-xs font-black text-blue-500 uppercase tracking-widest">· {record.language || 'Code'}</span>
                         </div>
                       </div>
                     </div>

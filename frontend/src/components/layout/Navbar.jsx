@@ -189,7 +189,7 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
                 onKeyDown={handleSearch}
                 className="w-full bg-transparent pl-3 pr-4 text-sm font-bold focus:outline-none text-gray-900 dark:text-white placeholder-gray-400"
               />
-              <div className="hidden sm:flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1 text-[10px] font-black text-gray-400 shrink-0 shadow-sm">
+              <div className="hidden sm:flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1 text-xs font-black text-gray-400 shrink-0 shadow-sm">
                 ⌘K
               </div>
             </div>
@@ -246,7 +246,7 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
               >
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 z-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white dark:border-gray-800 animate-in zoom-in">
+                  <span className="absolute -top-1 -right-1 z-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white border-2 border-white dark:border-gray-800 animate-in zoom-in">
                     {unreadCount}
                   </span>
                 )}
@@ -300,7 +300,7 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
                                 {notification.message}
                               </p>
-                              <div className="flex items-center gap-1 mt-2 text-[10px] text-gray-400 font-medium">
+                              <div className="flex items-center gap-1 mt-2 text-xs text-gray-400 font-medium">
                                 <Clock className="w-3 h-3" />
                                 {formatTime(notification.timestamp)}
                               </div>
@@ -347,7 +347,7 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
                 <span className="block text-sm font-bold text-gray-900 dark:text-white leading-tight truncate max-w-[150px]">
                   {profile?.name || user?.email?.split('@')[0] || "User"}
                 </span>
-                <span className="block text-[10px] uppercase font-bold tracking-wider text-blue-600 dark:text-blue-400 mt-0.5">
+                <span className="block text-xs uppercase font-bold tracking-wider text-blue-600 dark:text-blue-400 mt-0.5">
                   Pro Node
                 </span>
               </span>

@@ -173,6 +173,41 @@ const DOCS = {
         ]
       }
     ]
+  },
+  'vs-code-integration': {
+    title: "VS Code Integration",
+    subtitle: "Native IDE Plagiarism Prevention",
+    icon: Code2,
+    iconColor: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+    accentColor: "border-emerald-500 text-emerald-600 dark:text-emerald-400",
+    lastUpdated: "May 2026",
+    version: "v1.0.0",
+    sections: [
+      {
+        heading: "Overview",
+        icon: BookOpen,
+        content: [
+          { type: 'paragraph', text: "The Vouch VS Code Extension brings the power of the Vouch Immutable Ledger directly into the developer's environment. Instead of requiring users to manually upload files via the web dashboard, the extension allows developers to instantly notarize their active editor window with a single command or keyboard shortcut." },
+          { type: 'paragraph', text: "This frictionless integration encourages 'Notarization Driven Development', where developers can secure ownership of their logic milestones natively as they write them." }
+        ]
+      },
+      {
+        heading: "API Authentication",
+        icon: Lock,
+        content: [
+          { type: 'paragraph', text: "The extension authenticates with the Vouch API using an Extension API Key. Users must generate this key from their Settings dashboard on the Vouch platform and input it into the VS Code extension settings (vouch.apiKey)." },
+          { type: 'paragraph', text: "This API key is encrypted and stored locally in the VS Code Secrets storage. Every request made by the extension attaches this key in the x-extension-api-key header, allowing the backend to map the notarization directly to the user's Vouch profile." }
+        ]
+      },
+      {
+        heading: "Editor Context Parsing",
+        icon: Layers,
+        content: [
+          { type: 'paragraph', text: "When the 'Vouch: Notarize Current File' command is invoked, the extension reads the active TextEditor's document content. It does not read from the file system, ensuring that unsaved changes are included in the notarization if desired." },
+          { type: 'paragraph', text: "The content is transmitted securely over HTTPS to the Vouch Backend's /api/extension/upload endpoint, where it immediately undergoes the standard Stage 1 (Whitespace Stripping) and Stage 2 (AST Normalization) pipeline before being hashed with SHA3-256." }
+        ]
+      }
+    ]
   }
 };
 
@@ -205,6 +240,7 @@ export default function TechnicalDocs() {
     { key: 'code-normalization', label: 'Code Normalization', icon: FileCode },
     { key: 'cryptographic-hashing', label: 'Cryptographic Hashing', icon: Cpu },
     { key: 'immutable-ledger', label: 'Immutable Ledger', icon: Database },
+    { key: 'vs-code-integration', label: 'VS Code Extension', icon: Code2 },
   ];
 
   // Content block renderer

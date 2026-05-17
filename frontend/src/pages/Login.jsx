@@ -106,45 +106,45 @@ export default function Login() {
       </div>
 
       {/* Left Panel - Branding */}
-      <div className="hidden lg:flex w-1/2 bg-gray-900 flex-col justify-center px-16 xl:px-24 relative overflow-hidden text-white">
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
+      <div className="hidden lg:flex w-1/2 bg-slate-50 dark:bg-gray-900 flex-col justify-center px-16 xl:px-24 relative overflow-hidden text-slate-900 dark:text-white transition-colors duration-700">
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 dark:opacity-20 pointer-events-none">
           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600 blur-[120px] rounded-full"></div>
           <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-600 blur-[120px] rounded-full"></div>
         </div>
 
         <div className="relative z-10 animate-in fade-in slide-in-from-left-8 duration-700">
           <div className="mb-12 text-center lg:text-left">
-            <div className="w-32 h-32 rounded-full bg-gray-800/40 backdrop-blur-sm flex items-center justify-center mb-10 group hover:bg-purple-600/20 transition-all duration-700 border border-gray-700/50 hover:border-purple-500/50 shadow-2xl hover:shadow-purple-500/40 mx-auto lg:mx-0">
+            <div className="w-32 h-32 rounded-full bg-white/60 dark:bg-gray-800/40 backdrop-blur-sm flex items-center justify-center mb-10 group hover:bg-purple-100 dark:hover:bg-purple-600/20 transition-all duration-700 border border-slate-200 dark:border-gray-700/50 hover:border-purple-300 dark:hover:border-purple-500/50 shadow-2xl hover:shadow-purple-200 dark:hover:shadow-purple-500/40 mx-auto lg:mx-0">
               <img
                 src="/assets/vouch-logo.png"
                 alt="Vouch Logo"
-                className="w-24 h-24 object-contain invert opacity-90 group-hover:scale-110 group-hover:opacity-100 transition-all duration-500"
+                className="w-24 h-24 object-contain dark:invert opacity-90 group-hover:scale-110 group-hover:opacity-100 transition-all duration-500"
               />
             </div>
 
-            <h1 className="text-6xl font-black tracking-tighter text-white mb-5">Vouch</h1>
-            <h2 className="text-3xl xl:text-4xl font-black tracking-tight mb-6 text-white leading-tight">
+            <h1 className="text-6xl font-black tracking-tighter text-slate-900 dark:text-white mb-5">Vouch</h1>
+            <h2 className="text-3xl xl:text-4xl font-black tracking-tight mb-6 text-slate-800 dark:text-white leading-tight">
               Blockchain powered<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Digital Notary</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Digital Notary</span>
             </h2>
-            <p className="text-gray-400 text-lg max-w-md leading-relaxed">
+            <p className="text-slate-600 dark:text-gray-400 text-lg max-w-md leading-relaxed">
               Secure your intellectual property using military-grade SHA-256 hashing and immutable distributed ledgers.
             </p>
           </div>
 
           <div className="space-y-6 mt-12 hidden xl:block">
             <div className="flex items-start gap-4">
-              <div className="p-2.5 bg-gray-800 rounded-xl text-blue-400 shrink-0"><Code size={20} /></div>
+              <div className="p-2.5 bg-slate-200 dark:bg-gray-800 rounded-xl text-blue-600 dark:text-blue-400 shrink-0"><Code size={20} /></div>
               <div>
-                <h3 className="font-bold text-gray-200">Code Verification</h3>
-                <p className="text-sm text-gray-500 mt-1">Authenticity checks across codebases</p>
+                <h3 className="font-bold text-slate-800 dark:text-gray-200">Code Verification</h3>
+                <p className="text-sm text-slate-500 dark:text-gray-500 mt-1">Authenticity checks across codebases</p>
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <div className="p-2.5 bg-gray-800 rounded-xl text-indigo-400 shrink-0"><ShieldCheck size={20} /></div>
+              <div className="p-2.5 bg-slate-200 dark:bg-gray-800 rounded-xl text-indigo-600 dark:text-indigo-400 shrink-0"><ShieldCheck size={20} /></div>
               <div>
-                <h3 className="font-bold text-gray-200">IP Protection</h3>
-                <p className="text-sm text-gray-500 mt-1">Defend your digital assets proactively</p>
+                <h3 className="font-bold text-slate-800 dark:text-gray-200">IP Protection</h3>
+                <p className="text-sm text-slate-500 dark:text-gray-500 mt-1">Defend your digital assets proactively</p>
               </div>
             </div>
           </div>
@@ -166,7 +166,7 @@ export default function Login() {
           <div className="flex mb-8 border-b border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setAuthMode("signin")}
-              className={`flex-1 pb-3 text-center text-sm font-black uppercase tracking-widest transition-colors ${
+              className={`flex-1 pb-3 text-center text-base font-black uppercase tracking-widest transition-colors ${
                 authMode === "signin" 
                 ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400" 
                 : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -176,7 +176,7 @@ export default function Login() {
             </button>
             <button
               onClick={() => setAuthMode("signup")}
-              className={`flex-1 pb-3 text-center text-sm font-black uppercase tracking-widest transition-colors ${
+              className={`flex-1 pb-3 text-center text-base font-black uppercase tracking-widest transition-colors ${
                 authMode === "signup" 
                 ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400" 
                 : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -216,7 +216,7 @@ export default function Login() {
             {authMode === "signup" && (
               <>
                 <div className="space-y-1.5 animate-in fade-in zoom-in duration-300">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-2">Full Name</label>
+                  <label className="text-xs font-black uppercase tracking-widest text-gray-400 px-2">Full Name</label>
                   <input
                     type="text"
                     required
@@ -228,7 +228,7 @@ export default function Login() {
                   />
                 </div>
                 <div className="space-y-1.5 animate-in fade-in zoom-in duration-300">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-2">Institution/Company</label>
+                  <label className="text-xs font-black uppercase tracking-widest text-gray-400 px-2">Institution/Company</label>
                   <div className="relative">
                     <Building className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <input
@@ -246,7 +246,7 @@ export default function Login() {
             )}
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-2">Email Address</label>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400 px-2">Email Address</label>
               <input
                 type="email"
                 required
@@ -259,7 +259,7 @@ export default function Login() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-2">Password</label>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400 px-2">Password</label>
               <input
                 type="password"
                 required
@@ -273,7 +273,7 @@ export default function Login() {
 
             {authMode === "signup" && (
               <div className="space-y-1.5 animate-in fade-in zoom-in duration-300">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-2">Confirm Password</label>
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 px-2">Confirm Password</label>
                 <input
                   type="password"
                   required
@@ -306,8 +306,8 @@ export default function Login() {
           </form>
 
           <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700 text-center">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Secured by Vouch Ledger</p>
-            <div className="flex justify-center gap-6 text-gray-300 dark:text-gray-600">
+            <p className="text-xs font-black text-slate-500 dark:text-gray-400 uppercase tracking-widest mb-4">Secured by Vouch Ledger</p>
+            <div className="flex justify-center gap-6 text-slate-400 dark:text-gray-600">
               <ShieldCheck size={20} />
               <Lock size={20} />
               <Globe size={20} />

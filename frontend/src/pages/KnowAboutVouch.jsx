@@ -61,19 +61,40 @@ export default function KnowAboutVouch() {
   const [searchTerm, setSearchTerm] = useState("");
   const [openFaq, setOpenFaq] = useState(null);
   const [query, setQuery] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filteredFaqs = ALL_FAQS.filter(f => 
     f.question.toLowerCase().includes(searchTerm.toLowerCase()) || 
     f.answer.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAskQuestion = (e) => {
+  const handleAskQuestion = async (e) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    if (!query.trim() || !user?.email) {
+      if (!user?.email) toast.error("Please login to ask a question.");
+      return;
+    }
     
-    // Simulate question submission
-    toast.success("Your question has been sent to the Vouch team!");
-    setQuery("");
+    setIsSubmitting(true);
+    try {
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${backendUrl}/api/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_email: user.email, query })
+      });
+      
+      if (response.ok) {
+        toast.success("Your question has been sent to the Vouch team!");
+        setQuery("");
+      } else {
+        toast.error("Failed to send your question. Please try again later.");
+      }
+    } catch (err) {
+      toast.error("Failed to send your question. Check connection.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -205,10 +226,11 @@ export default function KnowAboutVouch() {
             </div>
             <button 
               type="submit"
-              className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3 transition active:scale-[0.98]"
+              disabled={isSubmitting}
+              className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3 transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-wait"
             >
-              <Send size={18} />
-              Submit Question
+              <Send size={18} className={isSubmitting ? "animate-pulse" : ""} />
+              {isSubmitting ? "Submitting..." : "Submit Question"}
             </button>
           </form>
         </div>

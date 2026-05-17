@@ -66,7 +66,7 @@ const ScanningAnimation = () => {
             style={{ width: `${progress}%` }}
           ></div>
         </div>
-        <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 w-8">{progress}%</span>
+        <span className="text-xs font-black text-blue-600 dark:text-blue-400 w-8">{progress}%</span>
       </div>
     </div>
   );
@@ -272,7 +272,7 @@ export default function Verification() {
                     {verifyStatus === 'loading' ? (
                       <div className="w-full">
                         <ScanningAnimation />
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 animate-pulse">Scanning immutable data-vessel...</p>
+                        <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600 animate-pulse">Scanning immutable data-vessel...</p>
                       </div>
                     ) : verifyStatus === 'verified' ? (
                       <div>

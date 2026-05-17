@@ -178,15 +178,15 @@ export default function BatchUpload() {
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white dark:bg-gray-800 p-8 rounded-[2rem] border border-gray-100 dark:border-gray-700 shadow-sm text-center">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Total Files</p>
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Total Files</p>
             <p className="text-4xl font-black text-gray-900 dark:text-white">{batchResult.total_files}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 p-8 rounded-[2rem] border border-gray-100 dark:border-gray-700 shadow-sm text-center">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Successfully Vouched</p>
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Successfully Vouched</p>
             <p className="text-4xl font-black text-green-600 dark:text-green-400">{batchResult.successful}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 p-8 rounded-[2rem] border border-gray-100 dark:border-gray-700 shadow-sm text-center">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Failed/Skipped</p>
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Failed/Skipped</p>
             <p className="text-4xl font-black text-red-500 dark:text-red-400">{batchResult.failed}</p>
           </div>
         </div>
@@ -213,10 +213,10 @@ export default function BatchUpload() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-900/50">
-                  <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">File Name</th>
-                  <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-                  <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Verification Code</th>
-                  <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Action</th>
+                  <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">File Name</th>
+                  <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Status</th>
+                  <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Verification Code</th>
+                  <th className="px-8 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -224,11 +224,11 @@ export default function BatchUpload() {
                   <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
                     <td className="px-8 py-5 font-bold text-gray-900 dark:text-white">{file.file_name}</td>
                     <td className="px-8 py-5">
-                      {file.status === 'success' && <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[10px] font-black rounded-full uppercase">Vouched</span>}
-                      {file.status === 'duplicate' && <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-black rounded-full uppercase">Already Exists</span>}
-                      {file.status === 'skipped' && <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 text-[10px] font-black rounded-full uppercase">Skipped</span>}
+                      {file.status === 'success' && <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-black rounded-full uppercase">Vouched</span>}
+                      {file.status === 'duplicate' && <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-black rounded-full uppercase">Already Exists</span>}
+                      {file.status === 'skipped' && <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 text-xs font-black rounded-full uppercase">Skipped</span>}
                       {file.status === 'error' && (
-                        <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-black rounded-full uppercase cursor-help" title={file.reason}>
+                        <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-black rounded-full uppercase cursor-help" title={file.reason}>
                           Error
                         </span>
                       )}
@@ -374,7 +374,7 @@ export default function BatchUpload() {
             </div>
             <h4 className="text-2xl font-black text-gray-900 dark:text-white mb-2">{selectedFile.name}</h4>
             <div className="flex items-center justify-center gap-2 mb-10">
-              <span className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-lg text-[10px] font-black text-gray-500 uppercase tracking-widest">{(selectedFile.size / 1024).toFixed(1)} KB</span>
+              <span className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-lg text-xs font-black text-gray-500 uppercase tracking-widest">{(selectedFile.size / 1024).toFixed(1)} KB</span>
               <span className="text-gray-400">·</span>
               <span className="text-blue-600 dark:text-blue-400 font-bold text-sm uppercase tracking-wider">Ready to batch vouch</span>
             </div>

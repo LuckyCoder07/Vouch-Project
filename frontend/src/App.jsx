@@ -67,6 +67,7 @@ function AppRoutes() {
         <Route path="docs/code-normalization" element={<TechnicalDocs />} />
         <Route path="docs/cryptographic-hashing" element={<TechnicalDocs />} />
         <Route path="docs/immutable-ledger" element={<TechnicalDocs />} />
+        <Route path="docs/vs-code-integration" element={<TechnicalDocs />} />
         <Route path="docs/vscore" element={<VScoreDocs />} />
         <Route path="vscore" element={<VScore />} />
       </Route>

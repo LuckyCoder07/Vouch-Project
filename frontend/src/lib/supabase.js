@@ -6,30 +6,38 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export async function signUp(email, password, name, institution) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
-
-  if (error) {
-    return { user: null, error };
-  }
-
-  const user = data.user;
-  if (user) {
-    const { error: profileError } = await supabase.from('profiles').insert({
-      id: user.id,
-      name,
-      institution,
-      role: 'student'
+  try {
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const response = await fetch(`${backendUrl}/api/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password, name, institution })
     });
 
-    if (profileError) {
-      return { user, error: profileError };
+    if (!response.ok) {
+      const errorData = await response.json();
+      return { user: null, error: new Error(errorData.detail || 'Registration failed') };
     }
-  }
 
-  return { user, error: null };
+    const data = await response.json();
+    
+    // Auto-login the user since we just created and auto-confirmed them via backend
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (signInError) {
+      return { user: null, error: signInError };
+    }
+    
+    return { user: signInData.user, error: null };
+
+  } catch (error) {
+    return { user: null, error };
+  }
 }
 
 export async function signIn(email, password) {

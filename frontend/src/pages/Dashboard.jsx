@@ -393,7 +393,7 @@ export default function Dashboard() {
                 <div className="mb-8 text-center">
                   <h4 className="text-2xl font-black text-gray-900 dark:text-white mb-2 truncate w-full px-4">{selectedFile?.name}</h4>
                   <div className="flex items-center justify-center gap-2">
-                    <span className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-lg text-[10px] font-black text-gray-500 uppercase tracking-widest">{(selectedFile?.size / 1024).toFixed(1)} KB</span>
+                    <span className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-lg text-xs font-black text-gray-500 uppercase tracking-widest">{(selectedFile?.size / 1024).toFixed(1)} KB</span>
                   </div>
                 </div>
 
@@ -465,14 +465,14 @@ export default function Dashboard() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-10 text-left">
                       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Verification ID</p>
+                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Verification ID</p>
                         <p className="text-xl font-mono font-black text-blue-600 dark:text-blue-400 tracking-tighter truncate">{storeResult?.verification_code}</p>
                         <div className="mt-3">
                           <AnchorBadge anchored={false} compact={false} />
                         </div>
                       </div>
                       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Structural Hash</p>
+                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Structural Hash</p>
                         <p className="text-xl font-mono font-black text-gray-600 dark:text-gray-300 tracking-tighter truncate">{hashResult?.structural_hash?.substring(0, 20)}...</p>
                       </div>
                     </div>

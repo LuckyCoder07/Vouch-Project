@@ -202,7 +202,7 @@ export default function Certificates() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h3 className="font-bold text-gray-900 dark:text-white truncate text-base">{record.file_name}</h3>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
                         <Calendar className="w-2.5 h-2.5" /> {formatDate(record.submitted_at)}
                       </p>
                     </div>
@@ -301,14 +301,14 @@ export default function Certificates() {
             <div className="p-8 space-y-6">
               <div className="space-y-4">
                 <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                  <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-2">Authenticated Owner</p>
+                  <p className="text-xs uppercase font-bold tracking-widest text-gray-400 mb-2">Authenticated Owner</p>
                   <p className="text-gray-900 dark:text-white font-bold text-lg flex items-center gap-2">
                     {selectedRecord.student_name} <ShieldCheck className="w-4 h-4 text-green-500" />
                   </p>
                 </div>
 
                 <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                  <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-2 font-mono">Immutable Hash (SHA3-256)</p>
+                  <p className="text-xs uppercase font-bold tracking-widest text-gray-400 mb-2 font-mono">Immutable Hash (SHA3-256)</p>
                   <div className="flex items-center gap-3">
                     <Fingerprint className="w-5 h-5 text-blue-500 shrink-0" />
                     <p className="text-xs font-mono text-blue-600 dark:text-blue-400 break-all select-all">
@@ -319,13 +319,13 @@ export default function Certificates() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                    <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-1">Timestamp</p>
-                    <p className="text-gray-900 dark:text-white font-bold text-[10px] truncate">
+                    <p className="text-xs uppercase font-bold tracking-widest text-gray-400 mb-1">Timestamp</p>
+                    <p className="text-gray-900 dark:text-white font-bold text-xs truncate">
                       {formatDate(selectedRecord.submitted_at)}
                     </p>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                    <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-1">Verification Code</p>
+                    <p className="text-xs uppercase font-bold tracking-widest text-gray-400 mb-1">Verification Code</p>
                     <p className="text-gray-900 dark:text-white font-bold text-xs truncate">
                       {selectedRecord.verification_code}
                     </p>

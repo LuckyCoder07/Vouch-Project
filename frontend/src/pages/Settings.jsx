@@ -91,7 +91,7 @@ export default function Settings() {
             />
             
             <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-700">
-              <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-3">Theme Preview</p>
+              <p className="text-xs uppercase font-bold tracking-widest text-gray-400 mb-3">Theme Preview</p>
               <div className="flex gap-4">
                 <div className="flex-1 h-20 rounded-xl bg-white border border-gray-200 shadow-sm flex flex-col p-2 gap-1">
                   <div className="w-8 h-2 bg-blue-600 rounded-full"></div>

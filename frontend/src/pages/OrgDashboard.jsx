@@ -382,7 +382,7 @@ export default function OrgDashboard() {
         </div>
 
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          <p className="px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">My Organizations</p>
+          <p className="px-3 text-xs font-black text-gray-400 uppercase tracking-widest mb-2">My Organizations</p>
           {orgs.map((o) => (
             <div 
               key={o.organizations.id} 
@@ -393,7 +393,7 @@ export default function OrgDashboard() {
                 <div className={`w-2 h-2 rounded-full ${selectedOrg?.id === o.organizations.id ? 'bg-blue-600 animate-pulse' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
                 <div>
                   <div className={`font-bold text-sm ${selectedOrg?.id === o.organizations.id ? 'text-blue-700 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>{o.organizations.name}</div>
-                  <div className="text-[10px] text-gray-400 capitalize font-medium">{o.role}</div>
+                  <div className="text-xs text-gray-400 capitalize font-medium">{o.role}</div>
                 </div>
               </div>
             </div>
@@ -410,7 +410,7 @@ export default function OrgDashboard() {
                   <div>
                     <div className="flex items-center gap-3 mb-2">
                       <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{selectedOrg.name}</h1>
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${isAdmin ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest border ${isAdmin ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
                         {isAdmin ? 'Administrator' : 'Member'}
                       </span>
                     </div>
@@ -469,7 +469,7 @@ export default function OrgDashboard() {
                     ) : (
                     <div className="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-700">
                       <table className="w-full text-sm text-left">
-                        <thead className="text-[10px] text-gray-400 uppercase font-black bg-gray-50 dark:bg-gray-700/50">
+                        <thead className="text-xs text-gray-400 uppercase font-black bg-gray-50 dark:bg-gray-700/50">
                           <tr><th className="px-4 py-4">Student</th><th className="px-4 py-4">Resource</th><th className="px-4 py-4">Timeline</th><th className="px-4 py-4 font-mono">Vouch Code</th></tr>
                         </thead>
                         <tbody className="divide-y dark:divide-gray-700">
@@ -478,10 +478,10 @@ export default function OrgDashboard() {
                               <td className="px-4 py-4 font-bold dark:text-white">{sub.student_name}</td>
                               <td className="px-4 py-4">
                                 <div className="font-medium dark:text-gray-200">{sub.file_name}</div>
-                                <div className="text-[10px] text-gray-400 uppercase font-black">{sub.language}</div>
+                                <div className="text-xs text-gray-400 uppercase font-black">{sub.language}</div>
                               </td>
                               <td className="px-4 py-4 text-gray-500 dark:text-gray-400">{format(new Date(sub.submitted_at), 'PP p')}</td>
-                              <td className="px-4 py-4 font-mono text-[10px] text-gray-400">{sub.verification_code}</td>
+                              <td className="px-4 py-4 font-mono text-xs text-gray-400">{sub.verification_code}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -508,7 +508,7 @@ export default function OrgDashboard() {
                   <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div className="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-700">
                       <table className="w-full text-sm text-left">
-                        <thead className="text-[10px] text-gray-400 uppercase font-black bg-gray-50 dark:bg-gray-700/50">
+                        <thead className="text-xs text-gray-400 uppercase font-black bg-gray-50 dark:bg-gray-700/50">
                           <tr><th className="px-6 py-4">Name</th><th className="px-6 py-4">Role</th><th className="px-6 py-4">Joined</th>{isAdmin && <th className="px-6 py-4 text-right">Actions</th>}</tr>
                         </thead>
                         <tbody className="divide-y dark:divide-gray-700">
@@ -516,10 +516,10 @@ export default function OrgDashboard() {
                             <tr key={m.profiles.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                               <td className="px-6 py-4">
                                 <div className="font-bold dark:text-white">{m.profiles.name || 'Unknown'}</div>
-                                <div className="text-gray-400 text-[10px] font-medium">{m.profiles.email}</div>
+                                <div className="text-gray-400 text-xs font-medium">{m.profiles.email}</div>
                               </td>
                               <td className="px-6 py-4">
-                                <span className={`px-3 py-1 text-[10px] uppercase font-black rounded-full border ${m.role === 'admin' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-gray-50 text-gray-600 border-gray-100'}`}>
+                                <span className={`px-3 py-1 text-xs uppercase font-black rounded-full border ${m.role === 'admin' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-gray-50 text-gray-600 border-gray-100'}`}>
                                   {m.role}
                                 </span>
                               </td>
@@ -686,7 +686,7 @@ export default function OrgDashboard() {
                     ) : (
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
-                          <thead className="text-[10px] text-gray-400 uppercase font-black bg-gray-50 dark:bg-gray-700/50">
+                          <thead className="text-xs text-gray-400 uppercase font-black bg-gray-50 dark:bg-gray-700/50">
                             <tr><th className="px-4 py-3">Label</th><th className="px-4 py-3">Key Preview</th><th className="px-4 py-3 text-right">Actions</th></tr>
                           </thead>
                           <tbody className="divide-y dark:divide-gray-700">

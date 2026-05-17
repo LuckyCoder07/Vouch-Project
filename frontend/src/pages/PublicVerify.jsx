@@ -185,7 +185,7 @@ export default function PublicVerify() {
               <div className="bg-white dark:bg-slate-800/80 border-2 border-emerald-500/30 rounded-[2.5rem] p-8 md:p-10 shadow-2xl shadow-emerald-500/5 relative overflow-hidden">
                 {/* Trust Badge */}
                 <div className="absolute top-6 right-6 flex items-center gap-2">
-                  <div className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${trust.color}`}>
+                  <div className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${trust.color}`}>
                     <div className="flex">
                       {[...Array(3)].map((_, i) => (
                         <Star key={i} size={10} fill={i < trust.stars ? "currentColor" : "none"} className={i < trust.stars ? "" : "opacity-20"} />
@@ -200,19 +200,19 @@ export default function PublicVerify() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10 pt-4">
                   <div className="space-y-6">
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                         <User size={12} /> Submitted By
                       </p>
                       <p className="text-xl font-black">{result.student_name}</p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                         <FileText size={12} /> File Name
                       </p>
                       <p className="text-lg font-bold truncate">{result.file_name}</p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                         <Globe size={12} /> Language
                       </p>
                       <p className="text-lg font-bold capitalize">{result.language}</p>
@@ -221,13 +221,13 @@ export default function PublicVerify() {
 
                   <div className="space-y-6">
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                         <Calendar size={12} /> Recorded On (UTC)
                       </p>
                       <p className="text-lg font-bold">{new Date(result.submitted_at || result.created_at).toLocaleString()}</p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                         <Code size={12} /> Structural Hash
                       </p>
                       <p className="text-xs font-mono bg-slate-100 dark:bg-slate-900 p-2.5 rounded-xl break-all line-clamp-2">
@@ -235,7 +235,7 @@ export default function PublicVerify() {
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                         <ShieldCheck size={12} /> Verification Code
                       </p>
                       <p className="text-xl font-mono font-black text-blue-600 dark:text-blue-400">{result.verification_code}</p>
@@ -271,11 +271,11 @@ export default function PublicVerify() {
                         <ShieldCheck size={16} /> Digitally Signed by Vouch
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl">
-                        <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Payload Hash</p>
+                        <p className="text-xs font-black uppercase text-slate-400 mb-1">Payload Hash</p>
                         <p className="text-xs font-mono break-all">{result.payload_hash?.substring(0, 24)}...</p>
                       </div>
                       <p className="text-xs text-slate-500 font-medium">Algorithm: RSA-PSS-SHA256</p>
-                      <p className="text-[10px] text-slate-400 leading-relaxed italic">
+                      <p className="text-xs text-slate-400 leading-relaxed italic">
                         Verify independently using vouch_public.pem from <a href="https://github.com/Mitesh-70/Vouch_Project" target="_blank" rel="noreferrer" className="underline hover:text-blue-500">github.com/Mitesh-70/Vouch_Project</a>
                       </p>
                     </div>
@@ -328,7 +328,7 @@ export default function PublicVerify() {
                     <div className="flex flex-col items-center justify-center py-4 text-center">
                       <Clock className="text-orange-500 w-8 h-8 mb-2 opacity-50" />
                       <p className="text-sm font-bold text-slate-500">Pending next anchor</p>
-                      <p className="text-[10px] text-slate-400 font-medium">Automatic anchoring occurs every 24 hours</p>
+                      <p className="text-xs text-slate-400 font-medium">Automatic anchoring occurs every 24 hours</p>
                     </div>
                   )}
                 </div>

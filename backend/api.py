@@ -512,6 +512,43 @@ async def api_health():
 
 # --- Phase 3: GitHub OAuth Endpoints ---
 
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+    institution: str
+
+@app.post("/api/auth/register")
+async def api_auth_register(req: RegisterRequest):
+    try:
+        db = require_supabase()
+        
+        # 1. Create User via admin api, auto-confirming email
+        user_resp = db.auth.admin.create_user({
+            "email": req.email,
+            "password": req.password,
+            "email_confirm": True,
+            "user_metadata": {
+                "name": req.name,
+                "institution": req.institution
+            }
+        })
+        
+        user_id = user_resp.user.id
+        
+        # 2. Insert into profiles using service role key (bypasses RLS)
+        db.table("profiles").insert({
+            "id": user_id,
+            "name": req.name,
+            "institution": req.institution,
+            "role": "student"
+        }).execute()
+        
+        return {"success": True, "user_id": user_id}
+    except Exception as e:
+        logger.error(f"Registration error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
 @app.get("/api/github/connect")
 async def github_connect(user_id: str):
     # Store user_id in state to retrieve it in callback
@@ -793,6 +830,48 @@ async def delete_org(org_id: str):
         return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class QueryRequest(BaseModel):
+    user_email: str
+    query: str
+
+@app.post("/api/query")
+async def submit_query(req: QueryRequest):
+    try:
+        support_email = os.getenv("SUPPORT_EMAIL", "lakshit0507@gmail.com")
+        html_body = f"""
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2>New Query from Vouch Platform</h2>
+            <p><strong>From:</strong> {req.user_email}</p>
+            <p><strong>Query:</strong></p>
+            <blockquote style="background: #f9f9f9; padding: 15px; border-left: 5px solid #ccc;">
+                {req.query}
+            </blockquote>
+        </div>
+        """
+        mailer.send_raw_email(
+            to_email=support_email,
+            subject="New Vouch Platform Query",
+            html=html_body
+        )
+        # Optionally send a confirmation to the user
+        user_html = f"""
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2>We received your query!</h2>
+            <p>Hi there,</p>
+            <p>Our technical team has received your query and will respond within 24 hours.</p>
+            <p><strong>Your Query:</strong><br/>{req.query}</p>
+        </div>
+        """
+        mailer.send_raw_email(
+            to_email=req.user_email,
+            subject="Vouch Support - Query Received",
+            html=user_html
+        )
+        return {"success": True, "message": "Query sent successfully"}
+    except Exception as e:
+        logger.error(f"Failed to submit query: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to submit query")
 
 # --- ASSIGNMENT ENDPOINTS ---
 
