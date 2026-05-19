@@ -1,422 +1,470 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { 
-  Menu, 
-  Search, 
-  Bell, 
-  Settings, 
-  User, 
-  Moon, 
-  Sun,
-  ShieldCheck,
-  X,
-  FileUp,
-  Fingerprint,
-  TrendingUp,
-  CheckCircle,
-  Clock,
-  LayoutDashboard,
-  BookOpen,
-  Activity,
-  FileBadge,
-  Award,
-  Upload
-} from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useNotifications } from '../../context/NotificationContext';
-import Avatar from '../ui/Avatar';
+import { Button, Avatar, useToast } from '../ui';
+import { supabase } from '../../lib/supabase';
+import { formatDistanceToNow } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
+import * as Tooltip from '@radix-ui/react-tooltip';
+import NotificationCenter from '../ui/NotificationCenter';
+import { 
+  Bell, 
+  Search, 
+  Command, 
+  X, 
+  Sun, 
+  Moon, 
+  Menu, 
+  ChevronRight, 
+  ShieldCheck, 
+  AlertTriangle, 
+  Info, 
+  LogOut, 
+  User, 
+  Building2, 
+  Clock, 
+  UploadCloud, 
+  FolderPlus, 
+  Key, 
+  FilePlus, 
+  FileSearch,
+  LayoutDashboard
+} from 'lucide-react';
 
-const SEARCH_ITEMS = [
-  { label: 'Dashboard', description: 'Notary workspace', path: '/dashboard', icon: 'LayoutDashboard' },
-  { label: 'Verification', description: 'Verify file integrity', path: '/verification', icon: 'ShieldCheck' },
-  { label: 'History', description: 'Immutable ledger records', path: '/history', icon: 'Clock' },
-  { label: 'How It Works', description: 'Learn the engine', path: '/how-it-works', icon: 'BookOpen' },
-  { label: 'Profile', description: 'Your OG Vouch profile', path: '/profile', icon: 'User' },
-  { label: 'Settings', description: 'App preferences', path: '/settings', icon: 'Settings' },
-  { label: 'Lifetime Entries', description: 'All your hashed files', path: '/history', icon: 'FileBadge' },
-  { label: 'Certificates', description: 'Download your certificates', path: '/history', icon: 'Award' },
-  { label: 'V-Score', description: 'Your reputation score', path: '/profile', icon: 'TrendingUp' },
-];
-
-const ICON_MAP = {
-  LayoutDashboard,
-  ShieldCheck,
-  BookOpen,
-  User,
-  Clock,
-  Settings,
-  FileBadge,
-  Award,
-  TrendingUp
+const pathMap = {
+  '/dashboard': 'Dashboard',
+  '/org': 'Organization',
+  '/batch': 'Batch Vouch',
+  '/history': 'History',
+  '/verification': 'Verification',
+  '/how-it-works': 'How It Works',
+  '/profile': 'Profile',
+  '/settings': 'Settings',
+  '/certificates': 'Certificates',
+  '/know-about-vouch': 'Know About Vouch',
+  '/vscore': 'V-Score',
 };
 
-export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
-  const { user, profile } = useAuth();
-  const { notifications, unreadCount, markAllRead, markRead } = useNotifications();
-  const navigate = useNavigate();
-  
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  
-  const dropdownRef = useRef(null);
-  const searchContainerRef = useRef(null);
-  const searchInputRef = useRef(null);
+const PALETTE_ITEMS = [
+  // Navigation
+  { label: 'Dashboard', path: '/dashboard', category: 'Navigation', icon: LayoutDashboard },
+  { label: 'Verification', path: '/verification', category: 'Navigation', icon: ShieldCheck },
+  { label: 'Batch Vouch', path: '/batch', category: 'Navigation', icon: UploadCloud },
+  { label: 'Organization', path: '/org', category: 'Navigation', icon: Building2 },
+  { label: 'History', path: '/history', category: 'Navigation', icon: Clock },
+  { label: 'Profile', path: '/profile', category: 'Navigation', icon: User },
+  // Actions
+  { label: 'Vouch a file', path: '/dashboard', category: 'Actions', icon: FilePlus },
+  { label: 'Verify a file', path: '/verification', category: 'Actions', icon: FileSearch },
+  { label: 'Create assignment', path: '/org', category: 'Actions', icon: FolderPlus },
+  { label: 'Join org with code', path: '/org', category: 'Actions', icon: Key }
+];
 
-  // Keyboard shortcut listener (Cmd+K / Ctrl+K and Escape)
+export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
+  const { user, profile, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const toast = useToast();
+
+  // State
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifCenterOpen, setNotifCenterOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  // Refs for click outside detection
+  const userMenuRef = useRef(null);
+
+  // Fetch notifications and subscribe to updates
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchNotifications = async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('read', false)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setNotifications(data);
+        setUnreadCount(data.length);
+      }
+    };
+
+    fetchNotifications();
+
+    const channel = supabase.channel('notifications')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        setNotifications(prev => [payload.new, ...prev]);
+        setUnreadCount(prev => prev + 1);
+        toast.success(payload.new.title || 'New Notification');
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  // Mark all notifications as read
+  const handleMarkAllRead = async () => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', user.id)
+      .eq('read', false);
+
+    if (!error) {
+      setUnreadCount(0);
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    }
+  };
+
+  // Click outside handlers
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Keyboard shortcut listener for Command Palette (⌘K)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-      if (e.key === 'Escape') {
-        setShowDropdown(false);
+        setSearchOpen(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Close dropdown when clicking outside
+  // Keyboard navigation inside Command Palette
+  const filteredItems = PALETTE_ITEMS.filter(item =>
+    item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowNotifications(false);
+    setSelectedIndex(0);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev + 1) % filteredItems.length);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev - 1 + filteredItems.length) % filteredItems.length);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (filteredItems[selectedIndex]) {
+          handleItemClick(filteredItems[selectedIndex]);
+        }
+      } else if (e.key === 'Escape') {
+        setSearchOpen(false);
       }
-      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [searchOpen, filteredItems, selectedIndex]);
 
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    
-    if (value.trim() === "") {
-      setSearchResults([]);
-      setShowDropdown(false);
-      return;
-    }
-
-    const filtered = SEARCH_ITEMS.filter(item => 
-      item.label.toLowerCase().includes(value.toLowerCase()) ||
-      item.description.toLowerCase().includes(value.toLowerCase())
-    );
-
-    setSearchResults(filtered.slice(0, 6));
-    setShowDropdown(filtered.length > 0);
+  const handleItemClick = (item) => {
+    navigate(item.path);
+    setSearchOpen(false);
+    setSearchQuery('');
   };
 
-  const handleResultClick = (path) => {
-    navigate(path);
-    setSearchTerm("");
-    setShowDropdown(false);
-    setShowMobileSearch(false);
+
+
+  // Dynamic Breadcrumbs
+  const getBreadcrumbs = () => {
+    const parts = location.pathname.split('/').filter(Boolean);
+    return parts.map((part, index) => {
+      const route = '/' + parts.slice(0, index + 1).join('/');
+      const name = pathMap[route] || part.charAt(0).toUpperCase() + part.slice(1);
+      return { name, path: route };
+    });
   };
 
-  const handleSearch = (e) => {
-    if (e.key === 'Enter' && searchTerm.trim()) {
-      navigate(`/verification?q=${encodeURIComponent(searchTerm.trim())}`);
-      setShowMobileSearch(false);
-    }
-  };
-
-  const getIcon = (type) => {
-    switch (type) {
-      case 'upload': return <Upload className="w-4 h-4 text-blue-500" />;
-      case 'hash': return <Fingerprint className="w-4 h-4 text-purple-500" />;
-      case 'profile': return <User className="w-4 h-4 text-orange-500" />;
-      case 'vscore': return <TrendingUp className="w-4 h-4 text-green-500" />;
-      case 'verify': return <ShieldCheck className="w-4 h-4 text-emerald-500" />;
-      default: return <Bell className="w-4 h-4 text-gray-500" />;
-    }
-  };
-
-  const formatTime = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-    
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 172800) return 'Yesterday';
-    return date.toLocaleDateString();
-  };
-
-  return (
-    <header className="sticky top-0 z-30 flex flex-col w-full bg-vouch-light/80 dark:bg-vouch-dark/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 transition-all duration-500">
-      <div className="flex flex-grow items-center justify-between py-4 px-4 shadow-2 md:px-6 2xl:px-11">
-        <div className="flex items-center gap-2 sm:gap-4 lg:hidden">
-          {/* Hamburger Menu - Mobile only */}
-          <button
-            onClick={toggleSidebar}
-            className="z-40 block rounded-sm border border-gray-200 bg-white p-1.5 shadow-sm dark:border-gray-700 dark:bg-gray-800 lg:hidden"
-          >
-            <Menu className="h-5 w-5 text-gray-500" />
-          </button>
-          
-          {/* Mobile Search Toggle */}
-          <button
-            onClick={() => setShowMobileSearch(!showMobileSearch)}
-            className="z-40 block rounded-sm border border-gray-200 bg-white p-1.5 shadow-sm dark:border-gray-700 dark:bg-gray-800 lg:hidden"
-          >
-            {showMobileSearch ? <X className="h-5 w-5 text-gray-500" /> : <Search className="h-5 w-5 text-gray-500" />}
-          </button>
-
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-8 h-8 text-blue-600 hidden sm:block" />
-          </div>
-        </div>
-
-        {/* Desktop Search */}
-        <div className="hidden lg:flex flex-1 max-w-lg xl:max-w-2xl mx-8">
-          <div className="relative w-full" ref={searchContainerRef}>
-            <div className="relative flex items-center w-full bg-gray-50 hover:bg-gray-100 dark:bg-gray-700/40 dark:hover:bg-gray-700/60 border border-gray-200 dark:border-gray-600/50 hover:border-blue-300 dark:hover:border-blue-500/50 focus-within:!border-blue-500 focus-within:!ring-4 focus-within:!ring-blue-500/20 dark:focus-within:!bg-gray-800 rounded-2xl py-2.5 px-4 transition-all duration-300 shadow-sm group cursor-text" onClick={() => searchInputRef.current?.focus()}>
-              <Search className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors shrink-0" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search anything... (⌘K)"
-                value={searchTerm}
-                onChange={handleSearchChange}
-                onKeyDown={handleSearch}
-                className="w-full bg-transparent pl-3 pr-4 text-sm font-bold focus:outline-none text-gray-900 dark:text-white placeholder-gray-400"
-              />
-              <div className="hidden sm:flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1 text-xs font-black text-gray-400 shrink-0 shadow-sm">
-                ⌘K
-              </div>
-            </div>
-
-            {/* Search Dropdown */}
-            {showDropdown && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 mt-3 w-full min-w-[320px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                <div className="py-2">
-                  {searchResults.map((item, index) => {
-                    const Icon = ICON_MAP[item.icon];
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => handleResultClick(item.path)}
-                        className="w-full flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left group"
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-900 flex items-center justify-center border border-gray-100 dark:border-gray-700 group-hover:border-blue-200 dark:group-hover:border-blue-900 transition-colors">
-                          <Icon className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                            {item.label}
-                          </div>
-                          <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-                            {item.description}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 2x:gap-7">
-          <ul className="flex items-center gap-2 2x:gap-4">
-            {/* Dark Mode Toggle */}
-            <li>
-              <button
-                onClick={toggleTheme}
-                className="relative flex h-8.5 w-8.5 p-2 items-center justify-center rounded-full border border-gray-200 bg-gray-50 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition"
-              >
-                {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
-            </li>
-
-            {/* Notification */}
-            <li className="relative" ref={dropdownRef}>
-              <button 
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="relative flex h-8.5 w-8.5 p-2 items-center justify-center rounded-full border border-gray-200 bg-gray-50 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition"
-              >
-                <Bell className="h-4 w-4" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 z-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white border-2 border-white dark:border-gray-800 animate-in zoom-in">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-
-              {/* Notification Dropdown */}
-              {showNotifications && (
-                <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-50">
-                  <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/50">
-                    <h3 className="font-bold text-gray-900 dark:text-white">Notifications</h3>
-                    <button 
-                      onClick={markAllRead}
-                      className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition"
-                    >
-                      Mark all as read
-                    </button>
-                  </div>
-                  
-                  <div className="max-h-[400px] overflow-y-auto">
-                    {notifications.length > 0 ? (
-                      <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                        {notifications.slice(0, 10).map((notification) => (
-                          <div 
-                            key={notification.id} 
-                            onClick={() => {
-                              markRead(notification.id);
-                              if (notification.path) {
-                                navigate(notification.path);
-                                setShowNotifications(false);
-                              }
-                            }}
-                            className={`p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition cursor-pointer relative ${!notification.read ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}
-                          >
-                            {!notification.read && (
-                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600"></div>
-                            )}
-                            <div className="shrink-0 mt-1">
-                              <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-900 shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center">
-                                {getIcon(notification.type)}
-                              </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                                  {notification.title}
-                                </p>
-                                {!notification.read && (
-                                  <div className="h-2 w-2 rounded-full bg-blue-600 shrink-0"></div>
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
-                                {notification.message}
-                              </p>
-                              <div className="flex items-center gap-1 mt-2 text-xs text-gray-400 font-medium">
-                                <Clock className="w-3 h-3" />
-                                {formatTime(notification.timestamp)}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-12 flex flex-col items-center justify-center text-center px-6">
-                        <div className="w-16 h-16 bg-gray-50 dark:bg-gray-700/50 rounded-full flex items-center justify-center mb-4">
-                          <Bell className="w-8 h-8 text-gray-300 dark:text-gray-600" />
-                        </div>
-                        <p className="text-gray-900 dark:text-white font-bold">No notifications yet</p>
-                        <p className="text-xs text-gray-500 mt-1">We'll notify you when your code is hashed or verified.</p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {notifications.length > 0 && (
-                    <div className="p-3 border-t border-gray-100 dark:border-gray-700 text-center bg-gray-50/30 dark:bg-gray-800/30">
-                      <button 
-                        onClick={() => {
-                          navigate('/history');
-                          setShowNotifications(false);
-                        }}
-                        className="text-xs font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition"
-                      >
-                        View All Activity
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </li>
-          </ul>
-
-          <div className="flex items-center gap-4">
-            {/* User Profile Button */}
-            <button 
-              onClick={() => navigate('/profile')}
-              className="flex items-center gap-4 hover:opacity-80 transition text-left"
+  const breadcrumbs = getBreadcrumbs();  return (
+    <>
+      <header className="sticky top-0 z-30 w-full glass backdrop-blur-xl bg-white/90 dark:bg-gray-950/90 border-b border-gray-100 dark:border-gray-800/50 px-4 md:px-6 h-16 flex items-center justify-between transition-colors duration-300">
+        
+        {/* Left Side: Logo (mobile) or Breadcrumb (desktop) */}
+        <div className="flex items-center gap-3">
+          {/* Mobile hamburger menu & logo */}
+          <div className="flex items-center gap-2 lg:hidden">
+            <button
+              onClick={toggleSidebar}
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+              aria-label="Open sidebar"
             >
-              <span className="hidden lg:block">
-                <span className="block text-sm font-bold text-gray-900 dark:text-white leading-tight truncate max-w-[150px]">
-                  {profile?.name || user?.email?.split('@')[0] || "User"}
-                </span>
-                <span className="block text-xs uppercase font-bold tracking-wider text-blue-600 dark:text-blue-400 mt-0.5">
-                  Pro Node
-                </span>
+              <Menu className="w-4 h-4" />
+            </button>
+            <Link to="/" className="flex items-center gap-2">
+              <ShieldCheck className="w-6 h-6 text-vouch-600 dark:text-vouch-400" />
+              <span className="font-bold text-base tracking-tight bg-gradient-to-r from-vouch-600 to-vouch-400 bg-clip-text text-transparent">
+                Vouch
               </span>
-              <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center border border-blue-200 dark:border-blue-800 overflow-hidden shadow-sm">
-                <Avatar seed={user?.email} />
-              </div>
-            </button>
-            
-            {/* Settings Button */}
-            <button 
-              onClick={() => navigate('/settings')}
-              className="h-10 w-10 flex items-center justify-center text-gray-400 hover:text-blue-600 transition"
-            >
-              <Settings className="h-5 w-5" />
-            </button>
+            </Link>
           </div>
-        </div>
-      </div>
-      
-      {/* Mobile Search Bar Expansion */}
-      {showMobileSearch && (
-        <div className="lg:hidden px-4 pb-4 border-t border-gray-100 dark:border-gray-700 pt-3 animate-in slide-in-from-top-2">
-          <div className="relative group cursor-text" ref={searchContainerRef} onClick={() => searchInputRef.current?.focus()}>
-            <div className="relative flex items-center w-full bg-gray-50 hover:bg-gray-100 dark:bg-gray-700/40 dark:hover:bg-gray-700/60 border border-gray-200 dark:border-gray-600/50 hover:border-blue-300 dark:hover:border-blue-500/50 focus-within:!border-blue-500 focus-within:!ring-4 focus-within:!ring-blue-500/20 dark:focus-within:!bg-gray-800 rounded-2xl py-3 px-4 transition-all duration-300 shadow-sm">
-              <Search className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors shrink-0" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search anything... (⌘K)"
-                value={searchTerm}
-                onChange={handleSearchChange}
-                onKeyDown={handleSearch}
-                autoFocus
-                className="w-full bg-transparent pl-3 pr-4 text-sm font-bold focus:outline-none text-gray-900 dark:text-white placeholder-gray-400"
-              />
-            </div>
 
-            {/* Mobile Search Dropdown */}
-            {showDropdown && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                <div className="py-2">
-                  {searchResults.map((item, index) => {
-                    const Icon = ICON_MAP[item.icon];
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => handleResultClick(item.path)}
-                        className="w-full flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-900 flex items-center justify-center border border-gray-100 dark:border-gray-700">
-                          <Icon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-bold text-gray-900 dark:text-white">
-                            {item.label}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {item.description}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+          {/* Desktop Breadcrumbs */}
+          <div className="hidden lg:flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 select-none">
+            <span className="font-medium hover:text-gray-700 dark:hover:text-gray-200 transition">Vouch</span>
+            <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+            {breadcrumbs.length > 0 ? (
+              breadcrumbs.map((crumb, idx) => (
+                <React.Fragment key={crumb.path}>
+                  {idx > 0 && <ChevronRight className="w-3.5 h-3.5 text-gray-400" />}
+                  <span className={idx === breadcrumbs.length - 1 ? "font-bold text-gray-900 dark:text-white text-sm" : ""}>
+                    {crumb.name}
+                  </span>
+                </React.Fragment>
+              ))
+            ) : (
+              <span className="font-bold text-gray-900 dark:text-white text-sm">Dashboard</span>
             )}
           </div>
         </div>
-      )}
-    </header>
+
+        {/* Center: Command Palette Trigger (desktop only) */}
+        <div className="hidden lg:block relative">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center justify-between bg-gray-100/70 hover:bg-gray-200/50 dark:bg-gray-800/40 dark:hover:bg-gray-800/80 rounded-xl px-4 py-2 text-sm text-gray-400 w-64 text-left border border-transparent dark:border-gray-800 transition cursor-pointer select-none"
+          >
+            <div className="flex items-center gap-2">
+              <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+              <span className="font-medium text-xs">Search or jump to...</span>
+            </div>
+            <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[10px] text-gray-400 font-mono shadow-sm">
+              ⌘K
+            </kbd>
+          </button>
+        </div>
+
+        {/* Right Side: Theme Toggle, Notifications, User Menu */}
+        <div className="flex items-center gap-2.5">
+          {/* Mobile search icon trigger */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="lg:hidden p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center gap-1.5"
+            aria-label="Open search command palette"
+          >
+            <Search className="w-4 h-4" />
+            <span className="hidden md:flex badge-gray text-[10px] scale-90">⌘K</span>
+          </button>
+
+          {/* Theme Toggle */}
+          <Tooltip.Provider>
+            <Tooltip.Root delayDuration={100}>
+              <Tooltip.Trigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleTheme}
+                  className="w-9 h-9 p-0 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                  aria-label="Toggle theme"
+                >
+                  {isDarkMode ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
+                </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Content
+                  side="bottom"
+                  sideOffset={8}
+                  className="z-50 px-3 py-1.5 text-xs font-semibold text-white bg-gray-900 dark:bg-gray-800 rounded-lg shadow-md animate-in fade-in zoom-in-95 duration-100"
+                >
+                  Toggle theme
+                  <Tooltip.Arrow className="fill-gray-900 dark:fill-gray-800" />
+                </Tooltip.Content>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </Tooltip.Provider>
+
+          {/* Notifications Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setNotifCenterOpen(true)}
+            className="relative w-9 h-9 p-0 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            aria-label="Toggle notifications"
+          >
+            <Bell className="w-4.5 h-4.5" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 flex h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-900" />
+            )}
+          </Button>
+
+          {/* User Menu Dropdown */}
+          <div className="relative" ref={userMenuRef}>
+            <button
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="flex items-center focus:outline-none"
+              aria-label="User menu"
+            >
+              <Avatar
+                name={profile?.name || user?.email || 'User'}
+                src={profile?.avatar_url}
+                size="sm"
+                className="hover:opacity-90 active:scale-95 transition"
+              />
+            </button>
+
+            <AnimatePresence>
+              {userMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 w-56 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 glass p-1.5 z-50"
+                >
+                  <div className="px-3 py-2 text-xs">
+                    <p className="font-bold text-gray-900 dark:text-white truncate">
+                      {profile?.name || user?.email?.split('@')[0] || "User"}
+                    </p>
+                    <p className="text-gray-400 dark:text-gray-500 truncate mt-0.5">{user?.email}</p>
+                  </div>
+                  <div className="my-1 border-t border-gray-100 dark:border-gray-850" />
+                  
+                  <button
+                    onClick={() => { navigate('/profile'); setUserMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-850 transition"
+                  >
+                    <User className="w-3.5 h-3.5 text-gray-400" />
+                    My Profile
+                  </button>
+                  <button
+                    onClick={() => { navigate('/org'); setUserMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-850 transition"
+                  >
+                    <Building2 className="w-3.5 h-3.5 text-gray-400" />
+                    Organization
+                  </button>
+                  <button
+                    onClick={() => { navigate('/history'); setUserMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-850 transition"
+                  >
+                    <Clock className="w-3.5 h-3.5 text-gray-400" />
+                    History
+                  </button>
+
+                  <div className="my-1 border-t border-gray-100 dark:border-gray-850" />
+                  
+                  <button
+                    onClick={() => { logout(); setUserMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs font-semibold text-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-red-400" />
+                    Sign Out
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </header>
+
+      {/* Command Palette Modal */}
+      <AnimatePresence>
+        {searchOpen && (
+          <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setSearchOpen(false)}
+            />
+
+            {/* Palette Panel */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: -10 }}
+              transition={{ duration: 0.15 }}
+              className="relative w-full max-w-lg bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden z-10"
+            >
+              {/* Input section */}
+              <div className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100 dark:border-gray-800">
+                <Search className="w-5 h-5 text-gray-400 shrink-0" />
+                <input
+                  type="text"
+                  className="w-full bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-400"
+                  placeholder="Type a command or search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus
+                />
+                <button 
+                  onClick={() => setSearchOpen(false)}
+                  className="p-1 rounded-md text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                  aria-label="Close search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Items List */}
+              <div className="max-h-80 overflow-y-auto p-2 scrollbar-thin">
+                {filteredItems.length > 0 ? (
+                  filteredItems.map((item, idx) => {
+                    const Icon = item.icon;
+                    const isSelected = idx === selectedIndex;
+                    return (
+                      <button
+                        key={item.label}
+                        onClick={() => handleItemClick(item)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
+                          isSelected
+                            ? 'bg-vouch-600 text-white shadow-md shadow-vouch-600/10'
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-800/40 text-gray-700 dark:text-gray-300'
+                        }`}
+                        onMouseEnter={() => setSelectedIndex(idx)}
+                      >
+                        <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-white' : 'text-gray-400'}`} />
+                        <span className="text-xs font-semibold flex-1 truncate">{item.label}</span>
+                        <span className={`text-[10px] uppercase font-bold tracking-wider ${
+                          isSelected ? 'text-vouch-100' : 'text-gray-450 dark:text-gray-500'
+                        }`}>
+                          {item.category}
+                        </span>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="py-12 text-center text-xs text-gray-400 dark:text-gray-500">
+                    No results found for "{searchQuery}"
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <NotificationCenter open={notifCenterOpen} onClose={() => setNotifCenterOpen(false)} />
+    </>
   );
 }

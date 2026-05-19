@@ -1,138 +1,115 @@
-import React, { useState, useEffect } from 'react';
-import {
-  User, Mail, Building, Award, FileBadge, TrendingUp, FileText, ArrowRight, Download,
-  Pen, Save, Github, Globe, RefreshCcw, X, Camera, Briefcase, MessageSquare, CheckCircle, AlertCircle,
-  ChevronDown, ChevronUp, ExternalLink, CreditCard
-} from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
-import Skeleton from '../components/ui/Skeleton';
-import Avatar from '../components/ui/Avatar';
-import { updateProfile } from '../lib/supabase';
+import { supabase, updateProfile } from '../lib/supabase';
+import { formatDistanceToNow, format } from 'date-fns';
+import {
+  Camera, Lock, CheckCircle, ChevronDown, ChevronUp, Github,
+  ExternalLink, FileCode2, User, Building2, Award, ShieldCheck, Trash2, Mail
+} from 'lucide-react';
+import { Button, Card, CardHeader, CardBody, Avatar, Input, SkeletonTable } from '../components/ui';
+import AnchorBadge from '../components/ui/AnchorBadge';
 
-const ROLES = [
-  'Student', 'Professor', 'Security Researcher', 'Software Engineer', 'Code Auditor', 'Blockchain Developer', 'Other'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+const RANKS = [
+  { name: 'Newcomer', minScore: 0 },
+  { name: 'Contributor', minScore: 500 },
+  { name: 'Notary', minScore: 1500 },
+  { name: 'Expert', minScore: 3000 },
+  { name: 'Master', minScore: 5000 },
+  { name: 'Legend', minScore: 10000 },
 ];
 
-const getRankStyle = (rank) => {
-  switch (rank) {
-    case 'Unranked':           return 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 border border-gray-200 dark:border-gray-600';
-    case 'Code Notary Rookie': return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-600';
-    case 'Code Notary Pro':    return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border border-purple-200 dark:border-purple-700';
-    case 'Code Notary Master': return 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white border-0 shadow-lg shadow-amber-500/30';
-    default:                   return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+function getRankInfo(score) {
+  let currentRank = RANKS[0];
+  let nextRank = RANKS[1];
+  for (let i = 0; i < RANKS.length; i++) {
+    if (score >= RANKS[i].minScore) {
+      currentRank = RANKS[i];
+      nextRank = RANKS[i + 1] || RANKS[i];
+    }
   }
-};
+  return { currentRank, nextRank };
+}
 
 export default function Profile() {
   const { user, profile: userProfile, refreshProfile, setProfile } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
 
-  const [isLoadingStats, setIsLoadingStats] = useState(true);
-  const [stats, setStats] = useState({ vScore: 0, contributions: 0, rank: 'Unranked' });
-  const [recentActivity, setRecentActivity] = useState([]);
+  // Active Tab state
+  const [activeTab, setActiveTab] = useState('Edit Profile');
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
+  // Stats Data
+  const [submissions, setSubmissions] = useState([]);
+  const [orgs, setOrgs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Edit Profile Form
   const [editForm, setEditForm] = useState({
-    name: '', institution: '', role: 'Student', bio: '', github_username: '', website: ''
+    name: '',
+    username: '',
+    institution: '',
+    bio: ''
   });
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedStatus, setSavedStatus] = useState(false);
 
+  // Password Change
+  const [pwdForm, setPwdForm] = useState({ current: '', newPwd: '', confirm: '' });
+  const [isChangingPwd, setIsChangingPwd] = useState(false);
+
+  // Delete Account
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // V-Score Expand
+  const [vScoreExpanded, setVScoreExpanded] = useState(false);
+
+  // GitHub integration
   const [githubConnected, setGithubConnected] = useState(false);
   const [githubLogin, setGithubLogin] = useState(null);
   const [githubRepos, setGithubRepos] = useState([]);
   const [showRepos, setShowRepos] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
 
-  const [subscription, setSubscription] = useState(null);
-  const [limitCheck, setLimitCheck] = useState(null);
-
   useEffect(() => {
-    const fetchSubData = async () => {
-      if (!user?.id) return;
-      try {
-        const subRes = await fetch(`/api/payments/subscription?user_id=${user.id}`);
-        if (subRes.ok) {
-          const subData = await subRes.json();
-          setSubscription(subData);
-        }
-        const limitRes = await fetch(`/api/payments/limit-check?user_id=${user.id}`);
-        if (limitRes.ok) {
-          const limitData = await limitRes.json();
-          setLimitCheck(limitData);
-        }
-      } catch (err) {
-        console.error("Failed to load subscription details:", err);
-      }
-    };
-    fetchSubData();
-  }, [user?.id]);
-
-  const handleCancelSub = async () => {
-    if (!window.confirm("Are you sure? You'll lose access at the end of your billing period.")) {
-      return;
-    }
-    try {
-      const res = await fetch(`/api/payments/cancel`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.id })
+    if (userProfile) {
+      setEditForm({
+        name: userProfile.name || '',
+        username: userProfile.github_username || '', // using this as generic username for now
+        institution: userProfile.institution || '',
+        bio: userProfile.bio || ''
       });
-      if (!res.ok) throw new Error('Cancellation failed');
-      toast.success("Subscription cancelled.");
-      
-      // Reload states
-      const subRes = await fetch(`/api/payments/subscription?user_id=${user.id}`);
-      if (subRes.ok) {
-        const subData = await subRes.json();
-        setSubscription(subData);
-      }
-      const limitRes = await fetch(`/api/payments/limit-check?user_id=${user.id}`);
-      if (limitRes.ok) {
-        const limitData = await limitRes.json();
-        setLimitCheck(limitData);
-      }
-    } catch (err) {
-      toast.error(err.message || 'Could not cancel subscription.');
     }
-  };
+  }, [userProfile]);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      if (!user?.id) return;
-      setIsLoadingStats(true);
+    if (!user?.id) return;
+    
+    const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const res = await fetch(`/api/records?user_id=${user.id}`);
-        if (!res.ok) throw new Error('Failed to fetch records');
-        const data = await res.json();
-        const records = data.records || [];
-
-        const vScore = records.length * 150;
-        let rank = 'Unranked';
-        if (vScore >= 5000) rank = 'Code Notary Master';
-        else if (vScore >= 1000) rank = 'Code Notary Pro';
-        else if (vScore >= 100) rank = 'Code Notary Rookie';
-
-        setStats({ vScore, contributions: records.length, rank });
-        setRecentActivity(records.slice(0, 5));
-      } catch (err) {
-        toast.error('Failed to load stats: ' + err.message);
-      } finally {
-        setIsLoadingStats(false);
-      }
-    };
-    fetchStats();
-  }, [user?.id]);
-
-  useEffect(() => {
-    const checkGitHub = async () => {
-      if (!user?.id) return;
-      try {
-        const res = await fetch(`/api/github/repos?user_id=${user.id}`);
-        if (res.ok) {
-          const data = await res.json();
+        const [subsRes, orgsRes, ghRes] = await Promise.all([
+          fetch(`${API_URL}/api/records?user_id=${user.id}`),
+          fetch(`${API_URL}/api/orgs?user_id=${user.id}`),
+          fetch(`${API_URL}/api/github/repos?user_id=${user.id}`)
+        ]);
+        
+        if (subsRes.ok) {
+          const data = await subsRes.json();
+          setSubmissions(data.records || []);
+        }
+        
+        if (orgsRes.ok) {
+          const data = await orgsRes.json();
+          setOrgs(data.orgs || []);
+        }
+        
+        if (ghRes.ok) {
+          const data = await ghRes.json();
           setGithubConnected(true);
           setGithubRepos(data.repos || []);
           if (data.github_login) {
@@ -142,10 +119,13 @@ export default function Profile() {
           }
         }
       } catch (err) {
-        console.error("GitHub check failed", err);
+        console.error("Failed to load profile data:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
-    checkGitHub();
+    
+    fetchData();
   }, [user?.id]);
 
   useEffect(() => {
@@ -157,10 +137,85 @@ export default function Profile() {
     }
   }, []);
 
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    if (!user?.id) return;
+    setIsSaving(true);
+    
+    try {
+      const updates = {
+        name: editForm.name.trim(),
+        institution: editForm.institution.trim(),
+        bio: editForm.bio.trim(),
+        github_username: editForm.username.trim() // using github_username as generic username handle
+      };
+
+      const { data, error } = await updateProfile(user.id, updates);
+      
+      if (error) {
+        if (error.code === '42703' || error.message?.includes('column')) {
+          const { data: retryData, error: retryError } = await updateProfile(user.id, {
+            name: updates.name, 
+            institution: updates.institution
+          });
+          if (retryError) throw retryError;
+          if (retryData) setProfile(retryData);
+          toast.warning('Bio/Username were skipped (DB migration needed).');
+        } else {
+          throw error;
+        }
+      } else if (data) {
+        setProfile(data);
+      }
+      
+      setSavedStatus(true);
+      setTimeout(() => setSavedStatus(false), 3000);
+    } catch (err) {
+      toast.error(err.message || 'Failed to update profile.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    if (pwdForm.newPwd !== pwdForm.confirm) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    
+    setIsChangingPwd(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pwdForm.newPwd });
+      if (error) throw error;
+      toast.success('Password updated successfully');
+      setPwdForm({ current: '', newPwd: '', confirm: '' });
+    } catch (err) {
+      toast.error(err.message || 'Failed to update password');
+    } finally {
+      setIsChangingPwd(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirm !== 'DELETE') {
+      toast.error('Please type DELETE to confirm');
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      await supabase.auth.signOut();
+      window.location.href = '/login';
+    } catch (err) {
+      toast.error('Failed to delete account');
+      setIsDeleting(false);
+    }
+  };
+
   const handleConnectGitHub = async () => {
     if (!user?.id) return;
     try {
-      const res = await fetch(`/api/github/connect?user_id=${user.id}`);
+      const res = await fetch(`${API_URL}/api/github/connect?user_id=${user.id}`);
       const data = await res.json();
       if (data.authorize_url) {
         window.location.href = data.authorize_url;
@@ -174,7 +229,7 @@ export default function Profile() {
     if (!user?.id) return;
     setGithubLoading(true);
     try {
-      const res = await fetch(`/api/github/disconnect`, {
+      const res = await fetch(`${API_URL}/api/github/disconnect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user.id })
@@ -191,488 +246,396 @@ export default function Profile() {
     }
   };
 
-  useEffect(() => {
-    if (userProfile) {
-      setEditForm({
-        name: userProfile.name || '',
-        institution: userProfile.institution || '',
-        role: userProfile.role || 'Student',
-        bio: userProfile.bio || '',
-        github_username: userProfile.github_username || '',
-        website: userProfile.website || ''
-      });
-    }
-  }, [userProfile]);
-
-  const handleUpdateProfile = async (e) => {
-    e.preventDefault();
-    if (!user?.id) return;
-    setIsUpdating(true);
-    try {
-      const updates = {
-        name: editForm.name.trim(),
-        institution: editForm.institution.trim(),
-        role: editForm.role,
-        bio: (editForm.bio || '').trim(),
-        github_username: (editForm.github_username || '').trim(),
-        website: (editForm.website || '').trim()
-      };
-
-      const { data, error } = await updateProfile(user.id, updates);
-      
-      if (error) {
-        // Handle missing columns if migrations haven't been run
-        if (error.code === '42703' || error.message?.includes('column')) {
-          const { data: retryData, error: retryError } = await updateProfile(user.id, {
-            name: updates.name, 
-            institution: updates.institution, 
-            role: updates.role
-          });
-          if (retryError) throw retryError;
-          if (retryData) setProfile(retryData);
-          toast.warning('Bio/Website were skipped (DB migration needed).');
-        } else {
-          throw error;
-        }
-      } else if (data) {
-        // Success - update state instantly with returned data
-        setProfile(data);
-      }
-
-      toast.success('Profile synchronized.');
-      setIsEditing(false);
-    } catch (err) {
-      toast.error(err.message || 'An unexpected error occurred.');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const downloadCertificate = async (record) => {
-    try {
-      const res = await fetch(`/api/certificate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          student_name: record.student_name,
-          file_name: record.file_name,
-          structural_hash: record.structural_hash,
-          submitted_at: record.submitted_at,
-          verification_code: record.verification_code
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to generate certificate.');
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Certificate_${record.student_name.replace(/\s+/g, '_')}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      toast.error('Download failed: ' + err.message);
-    }
-  };
-
+  // V-Score Calculation
+  const onTimeCount = submissions.length; // assuming all on time for now
+  const vScore = (submissions.length * 60) + (onTimeCount * 40);
+  const { currentRank, nextRank } = getRankInfo(vScore);
+  
+  const scoreProgress = nextRank.minScore > currentRank.minScore 
+    ? ((vScore - currentRank.minScore) / (nextRank.minScore - currentRank.minScore)) * 100
+    : 100;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 pb-12 animate-in fade-in duration-500">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Personal Ledger</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1 text-lg">Your decentralized identity and reputation score.</p>
-      </div>
-
-      {/* ── PROFILE HERO CARD - Avatar + Info side-by-side ── */}
-      <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-        {/* Banner */}
-        <div className="h-32 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 relative">
-          <div className="absolute inset-0 opacity-20"
-            style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '40px 40px' }}
-          />
-        </div>
-
-        {/* Content row */}
-        <div className="px-8 pb-8">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-6 -mt-12 mb-8">
-            <div className="relative shrink-0">
-              <div className="w-24 h-24 rounded-[1.5rem] border-4 border-white dark:border-gray-800 overflow-hidden shadow-xl">
-                <Avatar seed={user?.email} />
-              </div>
-            </div>
-
-            {/* Name / Role / Rank */}
-            <div className="flex-1 pt-2 sm:pt-8">
-              <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white">
+    <div className="w-full max-w-5xl mx-auto space-y-6 animate-in fade-in duration-300">
+      
+      {/* SECTION 1 — Profile Hero Card */}
+      <div className="card p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-soft">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          {/* Left Side: Avatar & Details */}
+          <div className="flex items-center gap-4">
+            <Avatar 
+              size="lg" 
+              seed={userProfile?.name || user?.email}
+              src={userProfile?.avatar_url} 
+            />
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                   {userProfile?.name || 'Vouch Member'}
-                </h2>
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest ${getRankStyle(stats.rank)}`}>
-                  <Award size={12} /> {stats.rank}
+                </h1>
+                <span className="badge-blue text-[10px] py-0.5 px-2 font-semibold">
+                  {userProfile?.role || 'Student'}
                 </span>
               </div>
-              <p className="text-sm font-bold text-blue-600 dark:text-blue-400 mt-0.5">{userProfile?.role || 'Vouch Member'}</p>
-              {userProfile?.bio && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-lg">"{userProfile.bio}"</p>
-              )}
-            </div>
-
-            {/* Edit Button — right of avatar row */}
-            <div className="sm:pt-8">
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-sm transition-all shadow-md active:scale-95 ${
-                  isEditing
-                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20'
-                }`}
-              >
-                {isEditing ? <X size={16} /> : <Pen size={16} />}
-                {isEditing ? 'Cancel' : 'Edit Profile'}
-              </button>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {user?.email}
+              </p>
+              <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+                <Building2 className="w-4 h-4 text-gray-400" />
+                <span>{userProfile?.institution || 'Vouch Platform'}</span>
+              </div>
             </div>
           </div>
 
-          {/* Quick info bar */}
-          <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-50 dark:border-gray-700 pt-5">
-            <span className="flex items-center gap-2"><Mail size={15} className="text-gray-400" />{user?.email}</span>
-            <span className="flex items-center gap-2"><Building size={15} className="text-gray-400" />{userProfile?.institution || 'Vouch Global'}</span>
-            {userProfile?.github_username && (
-              <a href={`https://github.com/${userProfile.github_username}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-gray-900 dark:text-white font-bold hover:text-blue-600 dark:hover:text-blue-400 transition">
-                <Github size={15} /> {userProfile.github_username}
-              </a>
-            )}
-            {userProfile?.website && (
-              <a href={userProfile.website} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-gray-900 dark:text-white font-bold hover:text-blue-600 dark:hover:text-blue-400 transition">
-                <Globe size={15} /> Website
-              </a>
-            )}
+          {/* Right Side: V-Score Display */}
+          <div className="md:w-64 space-y-2">
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-xs uppercase font-bold text-gray-400 tracking-wider">V-Score</p>
+                <h3 className="text-4xl font-black text-vouch-600 dark:text-vouch-400 leading-none mt-1">
+                  {vScore || 0}
+                </h3>
+              </div>
+              <span className="text-xs font-bold text-gray-500 dark:text-gray-400">{currentRank.name}</span>
+            </div>
+            <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-vouch-600 rounded-full transition-all duration-300"
+                style={{ width: `${Math.min(100, scoreProgress)}%` }} 
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Below the Hero: 3 stat pills in a row */}
+        <div className="grid grid-cols-3 gap-4 pt-6 mt-6 border-t border-gray-100 dark:border-gray-800/80 text-center md:text-left">
+          <div className="bg-gray-50 dark:bg-gray-950 p-3.5 rounded-2xl border border-gray-100 dark:border-gray-805">
+            <p className="text-xl font-black text-gray-950 dark:text-white">
+              {submissions.length}
+            </p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-450 mt-0.5">
+              Total Submissions
+            </p>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-950 p-3.5 rounded-2xl border border-gray-100 dark:border-gray-805">
+            <p className="text-xl font-black text-gray-955 dark:text-white">
+              {orgs.length}
+            </p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-455 mt-0.5">
+              Orgs Joined
+            </p>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-950 p-3.5 rounded-2xl border border-gray-100 dark:border-gray-805">
+            <p className="text-xl font-black text-gray-950 dark:text-white">
+              {user?.created_at ? format(new Date(user.created_at), 'MMM yyyy') : 'Recently'}
+            </p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-450 mt-0.5">
+              Member Since
+            </p>
           </div>
         </div>
       </div>
 
-      {/* ── INLINE EDIT FORM (slides open below hero) ── */}
-      {isEditing && (
-        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] border border-blue-100 dark:border-blue-900/30 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="p-8">
-            <h3 className="text-xl font-black text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              <Pen size={20} className="text-blue-600" /> Identity Settings
-            </h3>
-            <form onSubmit={handleUpdateProfile}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Full Name</label>
-                  <input type="text" required value={editForm.name}
-                    onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-900 dark:text-white font-bold text-sm" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Institution</label>
-                  <input type="text" required value={editForm.institution}
-                    onChange={e => setEditForm({ ...editForm, institution: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-900 dark:text-white font-bold text-sm" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Network Role</label>
-                  <select value={editForm.role} onChange={e => setEditForm({ ...editForm, role: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-900 dark:text-white font-bold text-sm appearance-none">
-                    {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Bio</label>
-                  <input type="text" value={editForm.bio}
-                    onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
-                    placeholder="Short expertise summary..."
-                    className="w-full px-5 py-3.5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-900 dark:text-white font-bold text-sm" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">GitHub Username</label>
-                  <div className="relative">
-                    <Github size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input type="text" value={editForm.github_username}
-                      onChange={e => setEditForm({ ...editForm, github_username: e.target.value })}
-                      placeholder="username"
-                      className="w-full pl-10 pr-5 py-3.5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-900 dark:text-white font-bold text-sm" />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Website</label>
-                  <div className="relative">
-                    <Globe size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input type="text" value={editForm.website}
-                      onChange={e => setEditForm({ ...editForm, website: e.target.value })}
-                      placeholder="https://..."
-                      className="w-full pl-10 pr-5 py-3.5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-900 dark:text-white font-bold text-sm" />
-                  </div>
-                </div>
-              </div>
+      {/* SECTION 2 — Tabbed Sections */}
+      <div className="flex border-b border-gray-250 dark:border-gray-800 overflow-x-auto scrollbar-none gap-8">
+        {['Edit Profile', 'Security', 'GitHub', 'Submissions'].map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`pb-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${
+              activeTab === tab
+                ? 'border-vouch-600 text-vouch-600 dark:text-vouch-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-50 dark:border-gray-700">
-                <button type="button" onClick={() => setIsEditing(false)}
-                  className="px-6 py-3 border border-gray-200 dark:border-gray-700 rounded-xl font-black text-gray-500 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                  Cancel
-                </button>
-                <button type="submit" disabled={isUpdating}
-                  className="flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl shadow-lg shadow-blue-600/20 transition disabled:opacity-50 active:scale-95 text-xs">
-                  {isUpdating ? <RefreshCcw className="animate-spin" size={15} /> : <Save size={15} />}
-                  Commit Changes
+      {/* TAB CONTENT CARDS */}
+      
+      {/* Tab 1 — Edit Profile */}
+      {activeTab === 'Edit Profile' && (
+        <div className="card p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-soft animate-in fade-in duration-200">
+          <form onSubmit={handleUpdateProfile} className="space-y-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Edit Profile</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input 
+                label="Full Name" 
+                value={editForm.name} 
+                onChange={e => setEditForm({...editForm, name: e.target.value})} 
+              />
+              <Input 
+                label="Institution / Company" 
+                value={editForm.institution} 
+                onChange={e => setEditForm({...editForm, institution: e.target.value})} 
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block mb-1.5 text-sm font-medium text-gray-750 dark:text-gray-350">Bio</label>
+              <textarea 
+                rows={3}
+                value={editForm.bio} 
+                onChange={e => setEditForm({...editForm, bio: e.target.value})}
+                placeholder="Tell us about your expertise..."
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-900 dark:text-white text-sm font-semibold outline-none focus:ring-2 focus:ring-vouch-500/20 focus:border-vouch-500 transition-all resize-none"
+              />
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button 
+                type="submit" 
+                disabled={isSaving}
+                className="btn-primary px-6 py-2.5 rounded-xl text-sm flex items-center gap-2"
+              >
+                {isSaving ? (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : savedStatus ? (
+                  <CheckCircle className="w-4 h-4 text-white animate-in zoom-in" />
+                ) : null}
+                <span>Save Changes</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Tab 2 — Security */}
+      {activeTab === 'Security' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          
+          {/* Change Password Card */}
+          <div className="card p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-soft">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Change Password</h3>
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input 
+                  type="password" 
+                  label="Current Password" 
+                  placeholder="••••••••"
+                  value={pwdForm.current}
+                  onChange={e => setPwdForm({...pwdForm, current: e.target.value})}
+                  required
+                />
+                <Input 
+                  type="password" 
+                  label="New Password" 
+                  placeholder="••••••••"
+                  value={pwdForm.newPwd}
+                  onChange={e => setPwdForm({...pwdForm, newPwd: e.target.value})}
+                  required
+                />
+                <Input 
+                  type="password" 
+                  label="Confirm New Password"
+                  placeholder="••••••••"
+                  value={pwdForm.confirm}
+                  onChange={e => setPwdForm({...pwdForm, confirm: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="flex justify-end pt-2">
+                <button 
+                  type="submit" 
+                  disabled={isChangingPwd}
+                  className="btn-primary py-2 px-4 text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-sm"
+                >
+                  {isChangingPwd && (
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  )}
+                  <span>Update Password</span>
                 </button>
               </div>
             </form>
           </div>
+
+          {/* Danger Zone Card */}
+          <div className="card p-6 bg-white dark:bg-gray-900 border border-red-200 dark:border-red-900/30 shadow-soft space-y-4">
+            <h3 className="text-lg font-bold text-red-600 dark:text-red-500">Danger Zone</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl leading-relaxed">
+              Permanently delete your account and all associated data. This action is irreversible and will remove all your notarized assets from your dashboard.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 items-end">
+              <div className="flex-1 max-w-sm">
+                <Input 
+                  placeholder='Type "DELETE" to confirm'
+                  value={deleteConfirm}
+                  onChange={e => setDeleteConfirm(e.target.value)}
+                />
+              </div>
+              <button 
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirm !== 'DELETE' || isDeleting}
+                className="btn-danger py-2.5 px-6 text-sm font-semibold rounded-xl"
+              >
+                {isDeleting && (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                )}
+                Delete Account
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* ── SUBSCRIPTION & USAGE ── */}
-      <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-xl overflow-hidden">
-        <div className="p-8">
-          <h3 className="text-xl font-black text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <CreditCard size={20} className="text-blue-600" /> Subscription & Usage
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Left: Your Plan Card */}
-            <div className="bg-gray-50 dark:bg-gray-900/30 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Current Plan</p>
-                  <div className="mt-2">
-                    {(!subscription?.plan || subscription.plan === 'free') && (
-                      <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                        Free Plan
-                      </span>
-                    )}
-                    {subscription?.plan === 'student' && (
-                      <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                        Student Pro
-                      </span>
-                    )}
-                    {subscription?.plan === 'classroom' && (
-                      <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
-                        Classroom
-                      </span>
-                    )}
+      {/* Tab 3 — GitHub */}
+      {activeTab === 'GitHub' && (
+        <div className="card p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-soft animate-in fade-in duration-200">
+          {githubConnected ? (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
+                    <Github className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="badge-green text-xs font-bold py-1 px-3 rounded-full">
+                      Connected as @{githubLogin || editForm.username}
+                    </span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Integrations successfully configured
+                    </p>
                   </div>
                 </div>
-
-                {(!subscription?.plan || subscription.plan === 'free') && (
-                  <Link 
-                    to="/pricing"
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-black px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95 uppercase tracking-wider"
+                
+                <div className="flex gap-3">
+                  <button 
+                    type="button"
+                    onClick={() => setShowRepos(!showRepos)}
+                    className="btn-secondary py-2 px-4 text-xs font-semibold rounded-lg"
                   >
-                    Upgrade
-                  </Link>
-                )}
+                    {showRepos ? 'Hide Repos' : 'View Repos'}
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={handleDisconnectGitHub} 
+                    disabled={githubLoading}
+                    className="btn-danger py-2 px-4 text-xs font-semibold rounded-lg"
+                  >
+                    Disconnect
+                  </button>
+                </div>
               </div>
 
-              {subscription && subscription.plan !== 'free' && (
-                <div className="mt-6 border-t border-gray-100 dark:border-gray-800 pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  {subscription.current_period_end && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      Renews on: <strong>{new Date(subscription.current_period_end).toLocaleDateString()}</strong>
-                    </span>
-                  )}
-                  {subscription.status !== 'cancelled' && (
-                    <button
-                      onClick={handleCancelSub}
-                      className="text-xs font-bold text-red-650 hover:text-red-500 transition-colors uppercase tracking-wider text-left sm:text-right"
-                    >
-                      Cancel subscription
-                    </button>
-                  )}
-                  {subscription.status === 'cancelled' && (
-                    <span className="text-xs font-semibold text-amber-500">
-                      Cancelled (expires at period end)
-                    </span>
-                  )}
+              {showRepos && githubRepos.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                  {githubRepos.map(repo => (
+                    <div key={repo.full_name} className="card p-4 flex items-center justify-between bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-850 shadow-soft">
+                      <div className="space-y-1 min-w-0 pr-4">
+                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                          {repo.name}
+                        </p>
+                        <span className="badge-blue font-mono text-[9px] py-0.5 px-2 font-semibold">
+                          {repo.language || 'Code'}
+                        </span>
+                      </div>
+                      <a 
+                        href={repo.html_url} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="p-1.5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-450 hover:text-gray-600 dark:hover:text-white rounded-lg transition-colors"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-
-            {/* Right: Usage Bar */}
-            <div className="bg-gray-50 dark:bg-gray-900/30 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 flex flex-col justify-center">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Submissions this month</span>
-                <span className="text-xs font-bold text-gray-700 dark:text-slate-300">
-                  {limitCheck?.used || 0} of {limitCheck?.limit || 25} used
-                </span>
-              </div>
-              
-              <div className="w-full h-3 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full transition-all duration-500 ${
-                    ((limitCheck?.used || 0) / (limitCheck?.limit || 25)) * 100 < 70
-                      ? 'bg-emerald-500'
-                      : ((limitCheck?.used || 0) / (limitCheck?.limit || 25)) * 100 < 90
-                      ? 'bg-amber-500'
-                      : 'bg-rose-500'
-                  }`}
-                  style={{ width: `${Math.min(100, ((limitCheck?.used || 0) / (limitCheck?.limit || 25)) * 100)}%` }}
-                />
-              </div>
-
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3">
-                Resetting on your monthly registration billing boundary cycle.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── GITHUB INTEGRATION ── */}
-      <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-xl overflow-hidden">
-        <div className="p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-              <Github size={20} className="text-gray-900 dark:text-white" /> GitHub Integration
-            </h3>
-            {githubConnected && (
-              <span className="flex items-center gap-1.5 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-black uppercase rounded-lg">
-                <CheckCircle size={12} /> Connected
-              </span>
-            )}
-          </div>
-
-          {!githubConnected ? (
-            <div className="flex flex-col items-center py-10 text-center">
-              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-3xl flex items-center justify-center text-gray-400 mb-6">
-                <Github size={40} />
-              </div>
-              <h4 className="text-lg font-bold text-gray-900 dark:text-white">Connect your GitHub account</h4>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-sm mb-8">
-                Auto-vouch commits and verify repositories directly through Vouch.
-              </p>
-              <button
-                onClick={handleConnectGitHub}
-                className="px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20 transition active:scale-95 text-sm uppercase tracking-widest"
-              >
-                Connect GitHub
-              </button>
-            </div>
           ) : (
-            <div className="space-y-8">
-              <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-900/30 p-6 rounded-3xl border border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-green-500 text-white rounded-2xl flex items-center justify-center">
-                    <Github size={24} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Account Linked</p>
-                    <p className="font-bold text-gray-900 dark:text-white">@{githubLogin || 'User'}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleDisconnectGitHub}
-                  disabled={githubLoading}
-                  className="px-6 py-2.5 text-red-600 font-bold text-xs hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition"
-                >
-                  {githubLoading ? 'Disconnecting...' : 'Disconnect'}
-                </button>
+            <div className="text-center py-12 max-w-sm mx-auto space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-gray-50 dark:bg-gray-950 border border-gray-150 dark:border-gray-800 flex items-center justify-center mx-auto text-gray-500">
+                <Github className="w-8 h-8" />
               </div>
-
-              <div className="border-t border-gray-50 dark:border-gray-700 pt-6">
-                <button
-                  onClick={() => setShowRepos(!showRepos)}
-                  className="flex items-center justify-between w-full text-left"
-                >
-                  <span className="font-bold text-gray-900 dark:text-white">Your Repositories ({githubRepos.length})</span>
-                  {showRepos ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                </button>
-
-                {showRepos && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 animate-in slide-in-from-top-2 duration-300">
-                    {githubRepos.length > 0 ? (
-                      githubRepos.map(repo => (
-                        <div key={repo.full_name} className="p-5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl hover:border-blue-200 dark:hover:border-blue-900 transition-all shadow-sm group">
-                          <div className="flex items-start justify-between mb-3">
-                            <h5 className="font-bold text-gray-900 dark:text-white truncate group-hover:text-blue-600 transition">{repo.name}</h5>
-                            <a href={repo.html_url} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-gray-900 dark:hover:text-white">
-                              <ExternalLink size={14} />
-                            </a>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 mb-3">
-                            <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 text-[9px] font-black uppercase tracking-widest rounded-md">{repo.language}</span>
-                            {repo.private ? (
-                              <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 text-[9px] font-black uppercase tracking-widest rounded-md">Private</span>
-                            ) : (
-                              <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 text-[9px] font-black uppercase tracking-widest rounded-md">Public</span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Updated {new Date(repo.updated_at).toLocaleDateString()}</p>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="col-span-2 py-10 text-center text-gray-400 font-bold">No repositories found.</div>
-                    )}
-                  </div>
-                )}
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Connect GitHub Account
+                </h3>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Link your GitHub to vouch files directly from your repos.
+                </p>
               </div>
+              <button 
+                type="button"
+                onClick={handleConnectGitHub}
+                className="w-full btn-primary py-2.5 text-sm font-semibold flex items-center justify-center gap-2"
+              >
+                <Github className="w-4 h-4" />
+                <span>Connect GitHub</span>
+              </button>
             </div>
           )}
         </div>
-      </div>
+      )}
 
-      {/* ── STATS + ACTIVITY ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Stats */}
-        <div className="lg:col-span-1 space-y-6">
-          <div onClick={() => navigate('/vscore')} className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1 transition-all">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 rounded-bl-full group-hover:scale-110 transition-transform" />
-            <TrendingUp className="text-blue-600 mb-2" size={28} />
-            <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Reputation Score</h4>
-            <p className="text-5xl font-black text-gray-900 dark:text-white tracking-tighter">{isLoadingStats ? '---' : stats.vScore}</p>
-            <div className="mt-6 flex items-center gap-1.5 text-xs font-bold text-blue-600"><span>Analyze Score</span><ArrowRight size={14} /></div>
-          </div>
-          <div onClick={() => navigate('/history')} className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1 transition-all">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/5 rounded-bl-full group-hover:scale-110 transition-transform" />
-            <FileBadge className="text-indigo-600 mb-2" size={28} />
-            <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Decentralized Assets</h4>
-            <p className="text-5xl font-black text-gray-900 dark:text-white tracking-tighter">{isLoadingStats ? '---' : stats.contributions}</p>
-            <div className="mt-6 flex items-center gap-1.5 text-xs font-bold text-indigo-600"><span>View History</span><ArrowRight size={14} /></div>
-          </div>
-        </div>
-
-        {/* Live Ledger Stream */}
-        <div className="lg:col-span-2">
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] shadow-xl border border-gray-100 dark:border-gray-700 h-full">
-            <div className="flex items-center justify-between mb-8 border-b border-gray-50 dark:border-gray-700 pb-5">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Live Ledger Stream</h2>
-              <Link to="/history" className="text-xs font-black text-blue-600 uppercase tracking-widest hover:underline flex items-center gap-1">See All <ArrowRight size={14} /></Link>
+      {/* Tab 4 — Submissions */}
+      {activeTab === 'Submissions' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          {isLoading ? (
+            <SkeletonTable rows={5} cols={5} />
+          ) : submissions.length === 0 ? (
+            <div className="card p-12 text-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-soft">
+              <FileCode2 className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-4" />
+              <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">
+                No submissions yet
+              </h4>
+              <p className="text-xs text-gray-500 font-medium mb-6">
+                Vouch your first file from the dashboard to see it listed here.
+              </p>
+              <Link to="/dashboard" className="btn-primary py-2 px-4 text-xs font-semibold rounded-lg">
+                Go to Dashboard
+              </Link>
             </div>
-            {isLoadingStats ? (
-              <div className="space-y-4">{[1, 2, 3].map(i => <Skeleton key={i} height="5rem" className="rounded-2xl" />)}</div>
-            ) : recentActivity.length > 0 ? (
-              <div className="space-y-4">
-                {recentActivity.map((record) => (
-                  <div key={record.id} className="flex items-center justify-between p-5 bg-gray-50/50 dark:bg-gray-900/30 rounded-3xl border border-transparent hover:border-blue-100 dark:hover:border-blue-900/30 transition-all group">
-                    <div className="flex items-center gap-5 min-w-0">
-                      <div className="w-14 h-14 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center border border-gray-100 dark:border-gray-700 shadow-sm group-hover:scale-110 transition-transform shrink-0">
-                        <FileText className="text-blue-500" size={24} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-gray-900 dark:text-white truncate text-lg">{record.file_name}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs font-black text-gray-400 uppercase tracking-widest">{new Date(record.submitted_at).toLocaleDateString()}</span>
-                          <span className="text-xs font-black text-blue-500 uppercase tracking-widest">· {record.language || 'Code'}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <button onClick={() => downloadCertificate(record)} className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-400 hover:text-blue-600 transition shadow-sm border border-gray-100 dark:border-gray-700">
-                      <Download size={20} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-16 text-center">
-                <p className="text-gray-500 dark:text-gray-400 font-bold text-lg">No assets vouchered yet.</p>
-              </div>
-            )}
-          </div>
+          ) : (
+            <div className="table-wrapper bg-white dark:bg-gray-900">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>File Name</th>
+                    <th>Language</th>
+                    <th>Submitted At</th>
+                    <th>Verification Code</th>
+                    <th>Anchored</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {submissions.slice(0, 10).map((sub) => (
+                    <tr key={sub.id}>
+                      <td className="font-bold text-gray-900 dark:text-white truncate max-w-[200px]">
+                        <span 
+                          onClick={() => navigate(`/verify/${sub.verification_code}`)}
+                          className="text-vouch-600 dark:text-vouch-400 hover:underline cursor-pointer"
+                        >
+                          {sub.file_name}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="badge-blue font-mono text-[9px] py-0.5 px-2 font-semibold">
+                          {sub.language || 'Code'}
+                        </span>
+                      </td>
+                      <td className="text-xs text-gray-500 dark:text-gray-400">
+                        {formatDistanceToNow(new Date(sub.submitted_at), { addSuffix: true })}
+                      </td>
+                      <td className="font-mono text-xs font-semibold text-gray-600 dark:text-gray-400">
+                        {sub.verification_code}
+                      </td>
+                      <td>
+                        <AnchorBadge anchored={sub.anchored} compact={true} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      </div>
+      )}
+
     </div>
   );
 }

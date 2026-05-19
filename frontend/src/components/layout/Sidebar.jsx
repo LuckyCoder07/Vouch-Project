@@ -1,92 +1,276 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-
+import { useAuth } from '../../context/AuthContext';
+import { Avatar } from '../ui';
+import { motion, AnimatePresence } from 'framer-motion';
+import * as Tooltip from '@radix-ui/react-tooltip';
 import {
-  Building2,
   LayoutDashboard,
+  FolderArchive,
   ShieldCheck,
-  HelpCircle,
+  Clock,
+  Building2,
   User,
+  HelpCircle,
   LogOut,
   X,
-  Award,
-  Info,
-  Clock,
-  FolderArchive,
-  GitBranch
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
 
-const navigation = [
-  { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-  { name: 'Batch Vouch', icon: FolderArchive, path: '/batch' },
-  { name: 'Verification', icon: ShieldCheck, path: '/verification' },
-  { name: 'History', icon: Clock, path: '/history' },
-  { name: 'Organization', icon: Building2, path: '/org' },
-  { name: 'Certificates', icon: Award, path: '/certificates' },
-  { name: 'How It Works', icon: HelpCircle, path: '/how-it-works' },
-  { name: 'Know About Vouch', icon: Info, path: '/know-about-vouch' },
-  { name: 'Profile', icon: User, path: '/profile' },
+const GROUPS = [
+  {
+    title: 'Workspace',
+    items: [
+      { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+      { name: 'Batch Vouch', icon: FolderArchive, path: '/batch' }
+    ]
+  },
+  {
+    title: 'Verify',
+    items: [
+      { name: 'Verification', icon: ShieldCheck, path: '/verification' },
+      { name: 'History', icon: Clock, path: '/history' }
+    ]
+  },
+  {
+    title: 'Collaborate',
+    items: [
+      { name: 'Organization', icon: Building2, path: '/org' }
+    ]
+  },
+  {
+    title: 'Account',
+    items: [
+      { name: 'Profile', icon: User, path: '/profile' },
+      { name: 'How It Works', icon: HelpCircle, path: '/how-it-works' }
+    ]
+  }
 ];
 
-export default function Sidebar({ isOpen, onClose }) {
-  const { logout } = useAuth();
+function SidebarTooltip({ children, content, enabled }) {
+  if (!enabled) return children;
+
+  return (
+    <Tooltip.Provider>
+      <Tooltip.Root delayDuration={100}>
+        <Tooltip.Trigger asChild>
+          {children}
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content
+            side="right"
+            sideOffset={12}
+            className="z-50 px-3 py-1.5 text-xs font-semibold text-white bg-gray-900 dark:bg-gray-800 rounded-lg shadow-md animate-in fade-in zoom-in-95 duration-100"
+          >
+            {content}
+            <Tooltip.Arrow className="fill-gray-900 dark:fill-gray-800" />
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  );
+}
+
+export default function Sidebar({ isOpen, onClose, onLogout, collapsed = false, onToggleCollapse }) {
+  const { user, profile } = useAuth();
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Monitor screen size to toggle layout mode
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const renderNavGroup = (group, isCollapsedSidebar) => {
+    return (
+      <div key={group.title} className="space-y-1">
+        {!isCollapsedSidebar && (
+          <h4 className="px-5 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+            {group.title}
+          </h4>
+        )}
+        <div className="space-y-0.5">
+          {group.items.map((item) => (
+            <SidebarTooltip
+              key={item.name}
+              content={item.name}
+              enabled={isCollapsedSidebar}
+            >
+              <NavLink
+                to={item.path}
+                onClick={isMobile ? onClose : undefined}
+                className={({ isActive }) =>
+                  `flex items-center rounded-xl transition-all duration-200 relative group ${
+                    isCollapsedSidebar 
+                      ? 'justify-center w-10 h-10 mx-auto' 
+                      : 'gap-3 px-3 py-2 mx-2'
+                  } ${
+                    isActive
+                      ? 'bg-vouch-50 dark:bg-vouch-955 text-vouch-600 dark:text-vouch-400 font-semibold'
+                      : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900/60 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`
+                }
+              >
+                {({ isActive }) => {
+                  const Icon = item.icon;
+                  return (
+                    <>
+                      <Icon className="w-5 h-5 shrink-0" />
+                      {!isCollapsedSidebar && (
+                        <span className="text-xs font-semibold">{item.name}</span>
+                      )}
+                      {isActive && (
+                        <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-vouch-600 dark:bg-vouch-400 rounded-r ${
+                          isCollapsedSidebar ? 'hidden' : ''
+                        }`} />
+                      )}
+                    </>
+                  );
+                }}
+              </NavLink>
+            </SidebarTooltip>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderFooter = (isCollapsedSidebar) => {
+    return (
+      <div className="mt-auto border-t border-gray-100 dark:border-gray-900 p-2 space-y-1 shrink-0">
+        {/* User Profile Card */}
+        {!isCollapsedSidebar && (
+          <div className="p-3 bg-gray-50 dark:bg-gray-900/60 rounded-xl border border-gray-100/80 dark:border-gray-800/80 flex items-center gap-2.5 mb-2 mx-1 select-none">
+            <Avatar name={profile?.name || user?.email || 'User'} src={profile?.avatar_url} size="xs" />
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-gray-900 dark:text-white truncate">
+                {profile?.name || user?.email?.split('@')[0] || 'User'}
+              </p>
+              <p className="text-[8px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mt-0.5">
+                {profile?.role || 'Member'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Logout Button */}
+        <SidebarTooltip content="Sign Out" enabled={isCollapsedSidebar}>
+          <button
+            onClick={onLogout}
+            className={`w-full flex items-center rounded-xl text-gray-500 hover:text-red-650 dark:text-gray-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 ${
+              isCollapsedSidebar ? 'justify-center h-10' : 'gap-3 px-3 py-2 mx-1 w-[calc(100%-8px)]'
+            }`}
+          >
+            <LogOut className="w-5 h-5 shrink-0" />
+            {!isCollapsedSidebar && <span className="text-xs font-semibold">Sign Out</span>}
+          </button>
+        </SidebarTooltip>
+
+        {/* Collapse Toggle Button (desktop only) */}
+        {!isMobile && (
+          <button
+            onClick={onToggleCollapse}
+            className={`w-full flex items-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all duration-200 ${
+              isCollapsedSidebar ? 'justify-center h-10' : 'gap-3 px-3 py-2 mx-1 w-[calc(100%-8px)]'
+            }`}
+          >
+            {isCollapsedSidebar ? <ChevronRight className="w-5 h-5 shrink-0" /> : <ChevronLeft className="w-5 h-5 shrink-0" />}
+            {!isCollapsedSidebar && <span className="text-xs font-semibold">Collapse sidebar</span>}
+          </button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
-      {/* Mobile Overlay */}
-      <div
-        className={`fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden transition-opacity duration-300 ${isOpen ? 'opacity-100 ease-out' : 'opacity-0 pointer-events-none ease-in'}`}
-        onClick={onClose}
-      ></div>
-
-      {/* Sidebar Container */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col w-72 bg-vouch-light dark:bg-vouch-dark border-r border-gray-200/50 dark:border-gray-800 transition-all duration-500 transform lg:static lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
-      >
-        <div className="flex items-center justify-between h-20 px-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2">
-            <img
-              src="/assets/vouch-logo.png"
-              alt="Logo"
-              className="w-14 h-14 object-contain scale-110"
-            />
-            <span className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Vouch</span>
-          </div>
-          <button onClick={onClose} className="lg:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {navigation.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.path}
+      {/* Mobile Sidebar */}
+      <AnimatePresence>
+        {isMobile && isOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden flex">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs"
               onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-300 ${isActive
-                  ? 'bg-blue-600/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400'
-                  : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-white'
-                }`
-              }
-            >
-              <item.icon className="h-5 w-5" />
-              {item.name}
-            </NavLink>
-          ))}
-        </nav>
+            />
 
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <button
-            onClick={logout}
-            className="flex items-center w-full gap-3 px-4 py-3 text-red-600 font-medium rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
-          >
-            <LogOut className="h-5 w-5" />
-            Logout
-          </button>
-        </div>
-      </aside>
+            {/* Sidebar Panel */}
+            <motion.aside
+              initial={{ x: -300 }}
+              animate={{ x: 0 }}
+              exit={{ x: -300 }}
+              transition={{ type: 'tween', ease: 'easeOut', duration: 0.25 }}
+              className="relative flex flex-col w-64 h-full bg-white dark:bg-gray-950 border-r border-gray-100 dark:border-gray-900"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between h-16 px-6 border-b border-gray-100 dark:border-gray-900 shrink-0">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-6 h-6 text-vouch-600 dark:text-vouch-400" />
+                  <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-vouch-600 to-vouch-400 bg-clip-text text-transparent">
+                    Vouch
+                  </span>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 transition text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Navigation list */}
+              <nav className="flex-1 py-6 space-y-6 overflow-y-auto scrollbar-thin">
+                {GROUPS.map((group) => renderNavGroup(group, false))}
+              </nav>
+
+              {/* Footer */}
+              {renderFooter(false)}
+            </motion.aside>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop Sidebar */}
+      {!isMobile && (
+        <aside
+          className={`flex flex-col h-full bg-white dark:bg-gray-950 border-r border-gray-100 dark:border-gray-900 transition-all duration-300 ease-in-out shrink-0 select-none ${
+            collapsed ? 'w-16' : 'w-64'
+          }`}
+        >
+          {/* Header */}
+          <div className={`flex items-center h-16 border-b border-gray-100 dark:border-gray-900 shrink-0 ${
+            collapsed ? 'justify-center' : 'justify-between px-6'
+          }`}>
+            {!collapsed ? (
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-6 h-6 text-vouch-600 dark:text-vouch-400" />
+                <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-vouch-600 to-vouch-400 bg-clip-text text-transparent">
+                  Vouch
+                </span>
+                <span className="badge-blue text-[9px] px-1.5 py-0.2 ml-1">v1.0</span>
+              </div>
+            ) : (
+              <ShieldCheck className="w-6 h-6 text-vouch-600 dark:text-vouch-400" />
+            )}
+          </div>
+
+          {/* Navigation list */}
+          <nav className="flex-1 py-6 space-y-6 overflow-y-auto scrollbar-thin">
+            {GROUPS.map((group) => renderNavGroup(group, collapsed))}
+          </nav>
+
+          {/* Footer */}
+          {renderFooter(collapsed)}
+        </aside>
+      )}
     </>
   );
 }

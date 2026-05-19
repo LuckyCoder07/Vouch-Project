@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AuthProvider, { useAuth } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
-import { ToastProvider } from "./components/ui/Toast";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -24,6 +23,8 @@ import Landing from "./pages/Landing";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Pricing from "./pages/Pricing";
+import ResetPassword from "./pages/ResetPassword";
+import { Toaster } from './components/ui/Toast';
 
 function AppRoutes() {
   const { isAuthenticated } = useAuth();
@@ -61,6 +62,7 @@ function AppRoutes() {
           )
         }
       />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Protected Dashboard Routes */}
       <Route
@@ -98,11 +100,23 @@ export default function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
-        <ToastProvider>
-          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <AppRoutes />
-          </BrowserRouter>
-        </ToastProvider>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: 'var(--toast-bg)',
+                color: 'var(--toast-color)',
+                border: '1px solid var(--toast-border)',
+                borderRadius: '12px',
+                fontSize: '13px',
+                fontWeight: '600',
+              },
+            }}
+          />
+          <AppRoutes />
+        </BrowserRouter>
       </NotificationProvider>
     </AuthProvider>
   );

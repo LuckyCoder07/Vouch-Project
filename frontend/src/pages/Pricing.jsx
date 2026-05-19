@@ -12,7 +12,9 @@ import {
   ChevronDown, 
   ChevronUp,
   Settings,
-  CreditCard
+  CreditCard,
+  CheckCircle2,
+  Info
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -161,482 +163,334 @@ export default function Pricing() {
   const isUnlimited = limitInfo?.limit > 9000;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-600 selection:text-white flex flex-col justify-between overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans flex flex-col justify-between overflow-x-hidden transition-colors duration-300 select-text">
       
-      <div className="max-w-5xl mx-auto w-full px-4 py-16">
+      <div className="max-w-5xl mx-auto w-full px-4 py-16 space-y-16">
         
         {/* Navigation & Header */}
-        <div className="flex items-center justify-between mb-16">
+        <div className="flex items-center justify-between select-none">
           <Link to="/" className="flex items-center gap-2">
-            <ShieldCheck className="h-7 w-7 text-blue-500" />
-            <span className="text-xl font-bold tracking-tight text-white">Vouch</span>
+            <ShieldCheck className="h-7 w-7 text-vouch-600" />
+            <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Vouch</span>
           </Link>
-          <Link to="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-semibold">
+          <Link to="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors text-sm font-semibold">
             <ArrowLeft className="h-4 w-4" />
             <span>Back to home</span>
           </Link>
         </div>
 
-        {/* URL Banners */}
+        {/* SECTION 3 — Success/Cancel Banners */}
         {successMessage && (
-          <div className="mb-8 p-4 bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 rounded-xl text-sm flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-            <Check className="h-5 w-5 shrink-0" />
-            <span>{successMessage}</span>
+          <div className="card p-5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-400 text-sm flex items-center gap-3 shadow-xs rounded-2xl select-none">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />
+            <span className="font-semibold">{successMessage}</span>
           </div>
         )}
 
         {cancelMessage && (
-          <div className="mb-8 p-4 bg-amber-950/60 border border-amber-500/30 text-amber-400 rounded-xl text-sm flex items-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
-            <AlertCircle className="h-5 w-5 shrink-0" />
-            <span>{cancelMessage}</span>
+          <div className="card p-5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 text-amber-800 dark:text-amber-400 text-sm flex items-center gap-3 shadow-xs rounded-2xl select-none">
+            <Info className="h-5 w-5 shrink-0 text-amber-500" />
+            <span className="font-semibold">{cancelMessage}</span>
           </div>
         )}
 
-        {/* Current Plan Banner */}
-        {isAuthenticated && (subscription || limitInfo) && (
-          <div className="mb-12 p-5 bg-blue-950/40 border border-blue-500/20 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_0_20px_rgba(59,130,246,0.05)]">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-900/30 flex items-center justify-center text-blue-400 shrink-0">
-                <CreditCard className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 font-semibold tracking-wider uppercase">Your Subscription</p>
-                <h4 className="text-sm font-bold text-white mt-0.5">
-                  You are currently on the <span className="text-blue-400 capitalize">{limitInfo?.plan || subscription?.plan || "Free"}</span> plan.
-                  <span className="text-slate-300 font-normal block sm:inline sm:ml-2">
-                    {isUnlimited 
-                      ? `(${limitInfo?.count} submissions used this month)`
-                      : `${remainingSubmissions()} submissions remaining this month.`
-                    }
-                  </span>
-                </h4>
-              </div>
+        {/* SECTION 1 — Header (text-center) */}
+        <div className="text-center space-y-4">
+          {isAuthenticated && subscription?.plan && subscription?.plan !== 'free' && (
+            <div className="flex justify-center select-none">
+              <span className="badge-green capitalize font-semibold px-3 py-1 rounded-full text-xs">
+                You're on {subscription.plan} plan
+              </span>
             </div>
-            
-            {/* Manage Subscription Actions */}
-            {(subscription?.plan === "student" || subscription?.plan === "classroom") && (
-              <div>
-                <button
-                  onClick={handleCancelSubscription}
-                  disabled={cancellingSub}
-                  className="bg-red-950/40 hover:bg-red-950/80 border border-red-500/30 text-red-400 hover:text-red-300 text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-2"
-                >
-                  {cancellingSub ? (
-                    <>
-                      <Loader className="h-4 w-4 animate-spin" />
-                      <span>Cancelling...</span>
-                    </>
-                  ) : (
-                    <span>Cancel subscription</span>
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+          )}
 
-        {/* Header Title */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4">
-            Simple pricing
+          <h1 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight">
+            Simple, honest pricing
           </h1>
-          <p className="text-slate-400 text-lg">
-            Start free. No credit card required.
+          <p className="text-lg text-gray-500 max-w-md mx-auto">
+            Start free. Pay when you need more.
           </p>
+
+          {/* Submissions Limit usage card */}
+          {limitInfo && (
+            <div className="max-w-md mx-auto card p-5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm space-y-3 mt-6">
+              <div className="flex items-center justify-between text-xs font-bold text-gray-700 dark:text-gray-300">
+                <span>Monthly Usage</span>
+                <span>{limitInfo.count ?? limitInfo.used} / {limitInfo.limit} submissions</span>
+              </div>
+              <div className="w-full h-2 bg-gray-100 dark:bg-gray-850 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-vouch-600 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, (((limitInfo.count ?? limitInfo.used) || 0) / limitInfo.limit) * 100)}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-gray-400 text-left">
+                {isUnlimited 
+                  ? "Unlimited high-speed structural notarizations active."
+                  : `${remainingSubmissions()} free submissions left this cycle.`
+                }
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Billing Toggle (monthly only) */}
-        <div className="flex flex-col items-center gap-2 mb-16">
-          <div className="bg-slate-900 border border-slate-800 rounded-full px-4 py-1.5 text-xs font-semibold text-slate-300 tracking-wide">
-            Monthly billing
-          </div>
-          <span className="text-[11px] text-slate-500">Annual plans coming soon — save 20%</span>
-        </div>
-
-        {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch mb-24">
+        {/* SECTION 2 — Pricing Cards (3 cards in grid) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
           
           {/* Card 1: Free */}
-          <div className="bg-slate-900/40 backdrop-blur border border-slate-850 hover:border-slate-800 rounded-3xl p-8 flex flex-col justify-between h-full transition-all">
+          <div className="card p-8 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between h-full transition-all">
             <div>
-              <h3 className="text-lg font-bold text-white mb-1">Free</h3>
-              <p className="text-xs text-slate-500 mb-6">Forever free</p>
-              <div className="flex items-baseline mb-8">
-                <span className="text-4xl font-extrabold text-white">₹0</span>
-                <span className="text-slate-500 text-xs font-medium ml-1">/ month</span>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Free</h3>
+              <p className="text-xs text-gray-400 mb-6">Forever free plan</p>
+              <div className="flex items-baseline mb-6">
+                <span className="text-4xl font-extrabold text-gray-900 dark:text-white">₹0</span>
+                <span className="text-gray-500 text-xs font-medium ml-1">/month</span>
               </div>
-              <ul className="space-y-4 text-sm text-slate-400 mb-8 border-t border-slate-900 pt-6">
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-500 shrink-0" />
-                  <span>25 submissions per month</span>
+              <ul className="space-y-3.5 text-sm text-gray-655 dark:text-gray-400 mb-8 border-t border-gray-100 dark:border-gray-800/80 pt-6">
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500 shrink-0" />
+                  <span>25 submissions/month</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-500 shrink-0" />
-                  <span>SHA3-256 + ABT hashing</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-500 shrink-0" />
-                  <span>PDF certificates</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-500 shrink-0" />
-                  <span>Public verification portal</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-500 shrink-0" />
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500 shrink-0" />
                   <span>1 organization</span>
                 </li>
-                <li className="flex items-center gap-2 text-slate-600 line-through">
-                  <X className="h-4 w-4 shrink-0" />
-                  <span>Batch ZIP upload</span>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500 shrink-0" />
+                  <span>Public verification portal</span>
                 </li>
-                <li className="flex items-center gap-2 text-slate-600 line-through">
-                  <X className="h-4 w-4 shrink-0" />
-                  <span>API access</span>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500 shrink-0" />
+                  <span>PDF certificates</span>
                 </li>
-                <li className="flex items-center gap-2 text-slate-600 line-through">
-                  <X className="h-4 w-4 shrink-0" />
-                  <span>Priority support</span>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500 shrink-0" />
+                  <span>SHA3-256 + ABT hashing</span>
                 </li>
               </ul>
             </div>
-            <Link 
-              to="/login?tab=signup" 
-              className="block text-center w-full bg-slate-800 hover:bg-slate-750 text-white font-semibold py-3 rounded-xl border border-slate-700 transition-all"
-            >
-              Get started free
-            </Link>
+            
+            {(!isAuthenticated) ? (
+              <Link to="/login" className="btn-secondary w-full text-center py-3 text-xs font-bold">
+                Get Started Free
+              </Link>
+            ) : (subscription?.plan === 'free' || limitInfo?.plan === 'free' || !subscription?.plan) ? (
+              <button disabled className="btn-secondary w-full cursor-not-allowed opacity-60 flex items-center justify-center gap-2 py-3 text-xs font-bold">
+                Current Plan
+              </button>
+            ) : (
+              <button disabled className="btn-secondary w-full cursor-not-allowed opacity-60 py-3 text-xs font-bold">
+                Free Tier
+              </button>
+            )}
           </div>
 
           {/* Card 2: Student Pro (Highlighted) */}
-          <div className="bg-slate-900 border-2 border-blue-500 rounded-3xl p-8 flex flex-col justify-between h-full relative shadow-[0_15px_40px_rgba(59,130,246,0.15)] md:scale-[1.03] z-10">
-            <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-extrabold uppercase px-4 py-1 rounded-full tracking-wider shadow-md">
+          <div className="card p-8 bg-white dark:bg-gray-900 border-2 border-vouch-600 ring-2 ring-vouch-600/20 shadow-md flex flex-col justify-between h-full relative z-10">
+            <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 badge-blue text-[10px] font-extrabold uppercase px-4 py-1.5 rounded-full tracking-wider shadow-sm select-none">
               Most Popular
             </span>
             <div>
-              <h3 className="text-lg font-bold text-white mb-1">Student Pro</h3>
-              <p className="text-xs text-slate-400 mb-6">For serious students</p>
-              <div className="flex items-baseline mb-8">
-                <span className="text-4xl font-extrabold text-white">₹199</span>
-                <span className="text-slate-500 text-xs font-medium ml-1">/ month</span>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Student Pro</h3>
+              <p className="text-xs text-gray-400 mb-6">For advanced software students</p>
+              <div className="flex items-baseline mb-6">
+                <span className="text-4xl font-extrabold text-gray-900 dark:text-white">₹199</span>
+                <span className="text-gray-500 text-xs font-medium ml-1">/month</span>
               </div>
-              <ul className="space-y-4 text-sm text-slate-355 mb-8 border-t border-slate-800 pt-6">
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>Unlimited submissions</span>
+              <ul className="space-y-3.5 text-sm text-gray-655 dark:text-gray-400 mb-8 border-t border-gray-100 dark:border-gray-800/80 pt-6">
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-vouch-500 shrink-0" />
+                  <span className="font-semibold text-gray-900 dark:text-white">Unlimited submissions</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>SHA3-256 + ABT hashing</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>PDF certificates</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>Public verification portal</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-vouch-500 shrink-0" />
                   <span>5 organizations</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-vouch-500 shrink-0" />
                   <span>Batch ZIP upload</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>Email notifications</span>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-vouch-500 shrink-0" />
+                  <span>Priority email support</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>VS Code extension</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>GitHub integration</span>
-                </li>
-                <li className="flex items-center gap-2 text-slate-600 line-through">
-                  <X className="h-4 w-4 shrink-0" />
-                  <span>API access</span>
-                </li>
-                <li className="flex items-center gap-2 text-slate-600 line-through">
-                  <X className="h-4 w-4 shrink-0" />
-                  <span>Admin dashboard</span>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-vouch-500 shrink-0" />
+                  <span className="font-semibold text-vouch-600 dark:text-vouch-400">Everything in Free</span>
                 </li>
               </ul>
             </div>
-            <button
-              onClick={() => handleSubscribe("student")}
-              disabled={isLoading.student || isLoading.classroom}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2"
-            >
-              {isLoading.student ? (
-                <>
-                  <Loader className="h-5 w-5 animate-spin" />
-                  <span>Processing...</span>
-                </>
-              ) : (
-                <span>Upgrade to Student Pro</span>
-              )}
-            </button>
+            
+            {(subscription?.plan === 'student' || limitInfo?.plan === 'student') ? (
+              <div className="space-y-3 w-full">
+                <button disabled className="btn-primary w-full cursor-not-allowed flex items-center justify-center gap-2 py-3 text-xs font-bold select-none">
+                  <Check className="w-4 h-4" />
+                  <span>Current Plan</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelSubscription}
+                  disabled={cancellingSub}
+                  className="w-full text-center text-red-500 hover:text-red-650 transition text-xs font-semibold block"
+                >
+                  {cancellingSub ? "Cancelling..." : "Cancel subscription"}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleSubscribe('student')}
+                disabled={isLoading.student || isLoading.classroom}
+                className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-xs font-bold"
+              >
+                {isLoading.student ? (
+                  <>
+                    <Loader className="h-4 w-4 animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <span>Upgrade to Pro</span>
+                )}
+              </button>
+            )}
           </div>
 
           {/* Card 3: Classroom */}
-          <div className="bg-slate-900/40 backdrop-blur border border-slate-850 hover:border-slate-800 rounded-3xl p-8 flex flex-col justify-between h-full transition-all">
+          <div className="card p-8 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between h-full transition-all">
             <div>
               <div className="flex justify-between items-start mb-1">
-                <h3 className="text-lg font-bold text-white">Classroom</h3>
-                <span className="bg-purple-950 border border-purple-500/30 text-purple-400 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Classroom</h3>
+                <span className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/30 text-purple-650 dark:text-purple-400 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider select-none">
                   For Educators
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mb-6">For professors and teams</p>
-              <div className="flex items-baseline mb-8">
-                <span className="text-4xl font-extrabold text-white">₹2,999</span>
-                <span className="text-slate-500 text-xs font-medium ml-1">/ month</span>
+              <p className="text-xs text-gray-400 mb-6">For institutions and cohorts</p>
+              <div className="flex items-baseline mb-6">
+                <span className="text-4xl font-extrabold text-gray-900 dark:text-white">₹2,999</span>
+                <span className="text-gray-500 text-xs font-medium ml-1">/month</span>
               </div>
-              <ul className="space-y-4 text-sm text-slate-400 mb-8 border-t border-slate-900 pt-6">
-                <li className="flex items-center gap-2 font-medium text-slate-200">
-                  <Check className="h-4 w-4 text-purple-400 shrink-0" />
-                  <span>Everything in Student Pro</span>
+              <ul className="space-y-3.5 text-sm text-gray-655 dark:text-gray-400 mb-8 border-t border-gray-100 dark:border-gray-800/80 pt-6">
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-purple-500 shrink-0" />
+                  <span className="font-semibold text-gray-900 dark:text-white">Everything in Pro</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-purple-400 shrink-0" />
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-purple-500 shrink-0" />
                   <span>20 organizations</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-purple-400 shrink-0" />
-                  <span>Up to 200 members per org</span>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-purple-500 shrink-0" />
+                  <span>Plagiarism detection</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-purple-400 shrink-0" />
-                  <span>Real-time classroom dashboard</span>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-purple-500 shrink-0" />
+                  <span>Assignment deadlines</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-purple-400 shrink-0" />
-                  <span>Plagiarism detection alerts</span>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-purple-500 shrink-0" />
+                  <span>Institution API access</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-purple-400 shrink-0" />
-                  <span>Assignment deadline management</span>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-purple-500 shrink-0" />
+                  <span>Leaderboard</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-purple-400 shrink-0" />
-                  <span>Leaderboard & gamification</span>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-purple-500 shrink-0" />
+                  <span>Real-time activity feed</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-purple-400 shrink-0" />
-                  <span>API access (LMS integrations)</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-purple-400 shrink-0" />
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-purple-500 shrink-0" />
                   <span>Signed export reports</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-purple-400 shrink-0" />
-                  <span>Priority email support</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-purple-400 shrink-0" />
-                  <span>Blockchain anchor proof</span>
                 </li>
               </ul>
             </div>
-            <button
-              onClick={() => handleSubscribe("classroom")}
-              disabled={isLoading.student || isLoading.classroom}
-              className="w-full bg-purple-650 hover:bg-purple-700 disabled:bg-purple-800 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-purple-600/10 flex items-center justify-center gap-2"
-            >
-              {isLoading.classroom ? (
-                <>
-                  <Loader className="h-5 w-5 animate-spin" />
-                  <span>Processing...</span>
-                </>
-              ) : (
-                <span>Start Classroom Plan</span>
-              )}
-            </button>
+
+            {(subscription?.plan === 'classroom' || limitInfo?.plan === 'classroom') ? (
+              <button disabled className="btn-primary w-full cursor-not-allowed flex items-center justify-center gap-2 py-3 text-xs font-bold select-none">
+                <Check className="w-4 h-4" />
+                <span>Current Plan</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleSubscribe('classroom')}
+                disabled={isLoading.student || isLoading.classroom}
+                className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-xs font-bold"
+              >
+                {isLoading.classroom ? (
+                  <>
+                    <Loader className="h-4 w-4 animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <span>Upgrade to Classroom</span>
+                )}
+              </button>
+            )}
           </div>
 
         </div>
 
-        {/* Feature Comparison Table */}
-        <div className="mb-24">
-          <h2 className="text-2xl font-bold text-center text-white mb-10">Compare all features</h2>
-          
-          <div className="border border-slate-900 rounded-2xl overflow-hidden bg-slate-900/20 backdrop-blur">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-900">
-                  <th className="p-4 font-semibold text-slate-400">Feature</th>
-                  <th className="p-4 font-semibold text-slate-450">Free</th>
-                  <th className="p-4 font-semibold text-slate-450">Student Pro</th>
-                  <th className="p-4 font-semibold text-white bg-blue-950/20 border-x border-slate-900">Classroom</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-900">
-                <tr>
-                  <td className="p-4 text-slate-300 font-medium">Monthly submissions</td>
-                  <td className="p-4 text-slate-400">25</td>
-                  <td className="p-4 text-slate-400">Unlimited</td>
-                  <td className="p-4 text-slate-200 bg-blue-950/20 border-x border-slate-900">Unlimited</td>
-                </tr>
-                <tr>
-                  <td className="p-4 text-slate-300 font-medium">Organizations</td>
-                  <td className="p-4 text-slate-400">1</td>
-                  <td className="p-4 text-slate-400">5</td>
-                  <td className="p-4 text-slate-200 bg-blue-950/20 border-x border-slate-900">20</td>
-                </tr>
-                <tr>
-                  <td className="p-4 text-slate-300 font-medium">PDF Certificates</td>
-                  <td className="p-4"><Check className="h-4 w-4 text-emerald-500" /></td>
-                  <td className="p-4"><Check className="h-4 w-4 text-emerald-500" /></td>
-                  <td className="p-4 bg-blue-950/20 border-x border-slate-900"><Check className="h-4 w-4 text-emerald-500" /></td>
-                </tr>
-                <tr>
-                  <td className="p-4 text-slate-300 font-medium">ABT Hashing</td>
-                  <td className="p-4"><Check className="h-4 w-4 text-emerald-500" /></td>
-                  <td className="p-4"><Check className="h-4 w-4 text-emerald-500" /></td>
-                  <td className="p-4 bg-blue-950/20 border-x border-slate-900"><Check className="h-4 w-4 text-emerald-500" /></td>
-                </tr>
-                <tr>
-                  <td className="p-4 text-slate-300 font-medium">Batch ZIP Upload</td>
-                  <td className="p-4"><X className="h-4 w-4 text-slate-600" /></td>
-                  <td className="p-4"><Check className="h-4 w-4 text-emerald-500" /></td>
-                  <td className="p-4 bg-blue-950/20 border-x border-slate-900"><Check className="h-4 w-4 text-emerald-500" /></td>
-                </tr>
-                <tr>
-                  <td className="p-4 text-slate-300 font-medium">VS Code Extension</td>
-                  <td className="p-4"><X className="h-4 w-4 text-slate-600" /></td>
-                  <td className="p-4"><Check className="h-4 w-4 text-emerald-500" /></td>
-                  <td className="p-4 bg-blue-950/20 border-x border-slate-900"><Check className="h-4 w-4 text-emerald-500" /></td>
-                </tr>
-                <tr>
-                  <td className="p-4 text-slate-300 font-medium">GitHub Integration</td>
-                  <td className="p-4"><X className="h-4 w-4 text-slate-600" /></td>
-                  <td className="p-4"><Check className="h-4 w-4 text-emerald-500" /></td>
-                  <td className="p-4 bg-blue-950/20 border-x border-slate-900"><Check className="h-4 w-4 text-emerald-500" /></td>
-                </tr>
-                <tr>
-                  <td className="p-4 text-slate-300 font-medium">API Access</td>
-                  <td className="p-4"><X className="h-4 w-4 text-slate-600" /></td>
-                  <td className="p-4"><X className="h-4 w-4 text-slate-600" /></td>
-                  <td className="p-4 bg-blue-950/20 border-x border-slate-900"><Check className="h-4 w-4 text-emerald-500" /></td>
-                </tr>
-                <tr>
-                  <td className="p-4 text-slate-300 font-medium">Plagiarism Detection</td>
-                  <td className="p-4"><X className="h-4 w-4 text-slate-600" /></td>
-                  <td className="p-4"><X className="h-4 w-4 text-slate-600" /></td>
-                  <td className="p-4 bg-blue-950/20 border-x border-slate-900"><Check className="h-4 w-4 text-emerald-500" /></td>
-                </tr>
-                <tr>
-                  <td className="p-4 text-slate-300 font-medium">Assignment Deadlines</td>
-                  <td className="p-4"><X className="h-4 w-4 text-slate-600" /></td>
-                  <td className="p-4"><X className="h-4 w-4 text-slate-600" /></td>
-                  <td className="p-4 bg-blue-950/20 border-x border-slate-900"><Check className="h-4 w-4 text-emerald-500" /></td>
-                </tr>
-                <tr>
-                  <td className="p-4 text-slate-300 font-medium">Real-time Dashboard</td>
-                  <td className="p-4"><X className="h-4 w-4 text-slate-600" /></td>
-                  <td className="p-4"><X className="h-4 w-4 text-slate-600" /></td>
-                  <td className="p-4 bg-blue-950/20 border-x border-slate-900"><Check className="h-4 w-4 text-emerald-500" /></td>
-                </tr>
-                <tr>
-                  <td className="p-4 text-slate-300 font-medium">Blockchain Anchoring</td>
-                  <td className="p-4"><X className="h-4 w-4 text-slate-600" /></td>
-                  <td className="p-4"><Check className="h-4 w-4 text-emerald-500" /></td>
-                  <td className="p-4 bg-blue-950/20 border-x border-slate-900"><Check className="h-4 w-4 text-emerald-500" /></td>
-                </tr>
-                <tr>
-                  <td className="p-4 text-slate-300 font-medium">Priority Support</td>
-                  <td className="p-4"><X className="h-4 w-4 text-slate-600" /></td>
-                  <td className="p-4"><X className="h-4 w-4 text-slate-600" /></td>
-                  <td className="p-4 bg-blue-950/20 border-x border-slate-900"><Check className="h-4 w-4 text-emerald-500" /></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* FAQ Section */}
-        <div>
-          <h2 className="text-2xl font-bold text-center text-white mb-10">Frequently asked questions</h2>
+        {/* SECTION 4 — FAQ Accordion */}
+        <div className="space-y-8 select-none">
+          <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white tracking-tight">Frequently Asked Questions</h2>
           
           <div className="space-y-4 max-w-3xl mx-auto">
-            
-            {/* FAQ 1 */}
-            <div className="bg-slate-900/30 border border-slate-900 rounded-xl overflow-hidden">
-              <button 
-                onClick={() => toggleFaq(0)} 
-                className="w-full p-5 text-left font-semibold text-white flex items-center justify-between gap-4"
-              >
-                <span>What payment methods do you accept?</span>
-                {openFaq[0] ? <ChevronUp className="h-4 w-4 text-slate-400 shrink-0" /> : <ChevronDown className="h-4 w-4 text-slate-400 shrink-0" />}
-              </button>
-              {openFaq[0] && (
-                <div className="px-5 pb-5 text-slate-400 text-sm leading-relaxed border-t border-slate-950 pt-3">
-                  All major credit and debit cards via Stripe. UPI, NetBanking coming soon.
+            {[
+              {
+                q: "What payment methods do you accept?",
+                a: "All major credit and debit cards via Stripe. UPI, NetBanking coming soon."
+              },
+              {
+                q: "Can I cancel anytime?",
+                a: "Yes. Cancel from your Profile page or direct pricing banner anytime. You keep access to the paid features until the end of your active billing period."
+              },
+              {
+                q: "Is there a free trial for paid plans?",
+                a: "The free plan lets you explore all core features with 25 submissions per month. No trial or credit card needed to explore."
+              },
+              {
+                q: "Do you offer educational discounts?",
+                a: "Yes — institutions getting 10+ Classroom seats get 30% off. Email us at hello@getvouch.dev to request institutional billing."
+              }
+            ].map((faq, index) => {
+              const isOpen = openFaq[index];
+              return (
+                <div key={index} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden shadow-xs">
+                  <button 
+                    type="button"
+                    onClick={() => toggleFaq(index)} 
+                    className="w-full p-5 text-left font-bold text-gray-900 dark:text-white flex items-center justify-between gap-4 cursor-pointer"
+                  >
+                    <span>{faq.q}</span>
+                    <ChevronDown className={`h-4 w-4 text-gray-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {isOpen && (
+                    <div className="text-sm text-gray-500 px-5 pb-5 leading-relaxed">
+                      {faq.a}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-
-            {/* FAQ 2 */}
-            <div className="bg-slate-900/30 border border-slate-900 rounded-xl overflow-hidden">
-              <button 
-                onClick={() => toggleFaq(1)} 
-                className="w-full p-5 text-left font-semibold text-white flex items-center justify-between gap-4"
-              >
-                <span>Can I cancel anytime?</span>
-                {openFaq[1] ? <ChevronUp className="h-4 w-4 text-slate-400 shrink-0" /> : <ChevronDown className="h-4 w-4 text-slate-400 shrink-0" />}
-              </button>
-              {openFaq[1] && (
-                <div className="px-5 pb-5 text-slate-400 text-sm leading-relaxed border-t border-slate-950 pt-3">
-                  Yes. Cancel from your Profile page or direct pricing banner anytime. You keep access to the paid features until the end of your active billing period.
-                </div>
-              )}
-            </div>
-
-            {/* FAQ 3 */}
-            <div className="bg-slate-900/30 border border-slate-900 rounded-xl overflow-hidden">
-              <button 
-                onClick={() => toggleFaq(2)} 
-                className="w-full p-5 text-left font-semibold text-white flex items-center justify-between gap-4"
-              >
-                <span>Is there a free trial for paid plans?</span>
-                {openFaq[2] ? <ChevronUp className="h-4 w-4 text-slate-400 shrink-0" /> : <ChevronDown className="h-4 w-4 text-slate-400 shrink-0" />}
-              </button>
-              {openFaq[2] && (
-                <div className="px-5 pb-5 text-slate-400 text-sm leading-relaxed border-t border-slate-950 pt-3">
-                  The free plan lets you explore all core features with 25 submissions per month. No trial or credit card needed to explore.
-                </div>
-              )}
-            </div>
-
-            {/* FAQ 4 */}
-            <div className="bg-slate-900/30 border border-slate-900 rounded-xl overflow-hidden">
-              <button 
-                onClick={() => toggleFaq(3)} 
-                className="w-full p-5 text-left font-semibold text-white flex items-center justify-between gap-4"
-              >
-                <span>Do you offer educational discounts?</span>
-                {openFaq[3] ? <ChevronUp className="h-4 w-4 text-slate-400 shrink-0" /> : <ChevronDown className="h-4 w-4 text-slate-400 shrink-0" />}
-              </button>
-              {openFaq[3] && (
-                <div className="px-5 pb-5 text-slate-400 text-sm leading-relaxed border-t border-slate-950 pt-3">
-                  Yes — institutions getting 10+ Classroom seats get 30% off. Email us at hello@getvouch.dev to request institutional billing.
-                </div>
-              )}
-            </div>
-
+              );
+            })}
           </div>
+        </div>
+
+        {/* SECTION 5 — Bottom CTA */}
+        <div className="text-center space-y-2 py-8 border-t border-gray-100 dark:border-gray-800/80">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Still have questions?</h3>
+          <p className="text-sm text-gray-500">
+            Email us at{' '}
+            <a href="mailto:lakshit0507@gmail.com" className="text-vouch-600 font-bold hover:underline">
+              lakshit0507@gmail.com
+            </a>
+          </p>
         </div>
 
       </div>
 
-      <footer className="text-center text-xs text-slate-600 py-8 border-t border-slate-900">
-        © 2025 Vouch · Built with ♥ in India
+      <footer className="text-center text-xs text-gray-450 dark:text-gray-500 py-8 border-t border-gray-150 dark:border-gray-850 bg-white dark:bg-gray-900/50">
+        © 2026 Vouch · Built with ♥ in India
       </footer>
 
     </div>
