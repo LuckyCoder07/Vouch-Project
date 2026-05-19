@@ -38,7 +38,7 @@ except ImportError:
         from mailer import Mailer
         from exceptions import VouchHashError, VouchCertError
     except ImportError:
-        from backend.hasher import CodeHasher
+        from hasher import CodeHasher
         from backend.certificate import Certificate
         from backend.signer import CertificateSigner
         from backend.mailer import Mailer
