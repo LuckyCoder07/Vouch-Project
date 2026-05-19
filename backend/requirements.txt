@@ -44,8 +44,11 @@ requests==2.33.1
 rich==14.3.4
 rsa==4.9.1
 six==1.17.0
+sentry-sdk==2.60.0
+slowapi==0.1.9
 starlette==1.0.0
 storage3==2.29.0
+stripe==15.1.0
 StrEnum==0.4.15
 strictyaml==1.7.3
 supabase==2.29.0

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   User, Mail, Building, Award, FileBadge, TrendingUp, FileText, ArrowRight, Download,
   Pen, Save, Github, Globe, RefreshCcw, X, Camera, Briefcase, MessageSquare, CheckCircle, AlertCircle,
-  ChevronDown, ChevronUp, ExternalLink
+  ChevronDown, ChevronUp, ExternalLink, CreditCard
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -45,6 +45,59 @@ export default function Profile() {
   const [githubRepos, setGithubRepos] = useState([]);
   const [showRepos, setShowRepos] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
+
+  const [subscription, setSubscription] = useState(null);
+  const [limitCheck, setLimitCheck] = useState(null);
+
+  useEffect(() => {
+    const fetchSubData = async () => {
+      if (!user?.id) return;
+      try {
+        const subRes = await fetch(`/api/payments/subscription?user_id=${user.id}`);
+        if (subRes.ok) {
+          const subData = await subRes.json();
+          setSubscription(subData);
+        }
+        const limitRes = await fetch(`/api/payments/limit-check?user_id=${user.id}`);
+        if (limitRes.ok) {
+          const limitData = await limitRes.json();
+          setLimitCheck(limitData);
+        }
+      } catch (err) {
+        console.error("Failed to load subscription details:", err);
+      }
+    };
+    fetchSubData();
+  }, [user?.id]);
+
+  const handleCancelSub = async () => {
+    if (!window.confirm("Are you sure? You'll lose access at the end of your billing period.")) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/payments/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id })
+      });
+      if (!res.ok) throw new Error('Cancellation failed');
+      toast.success("Subscription cancelled.");
+      
+      // Reload states
+      const subRes = await fetch(`/api/payments/subscription?user_id=${user.id}`);
+      if (subRes.ok) {
+        const subData = await subRes.json();
+        setSubscription(subData);
+      }
+      const limitRes = await fetch(`/api/payments/limit-check?user_id=${user.id}`);
+      if (limitRes.ok) {
+        const limitData = await limitRes.json();
+        setLimitCheck(limitData);
+      }
+    } catch (err) {
+      toast.error(err.message || 'Could not cancel subscription.');
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -371,6 +424,102 @@ export default function Profile() {
           </div>
         </div>
       )}
+
+      {/* ── SUBSCRIPTION & USAGE ── */}
+      <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-xl overflow-hidden">
+        <div className="p-8">
+          <h3 className="text-xl font-black text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <CreditCard size={20} className="text-blue-600" /> Subscription & Usage
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Left: Your Plan Card */}
+            <div className="bg-gray-50 dark:bg-gray-900/30 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Current Plan</p>
+                  <div className="mt-2">
+                    {(!subscription?.plan || subscription.plan === 'free') && (
+                      <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                        Free Plan
+                      </span>
+                    )}
+                    {subscription?.plan === 'student' && (
+                      <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                        Student Pro
+                      </span>
+                    )}
+                    {subscription?.plan === 'classroom' && (
+                      <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                        Classroom
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {(!subscription?.plan || subscription.plan === 'free') && (
+                  <Link 
+                    to="/pricing"
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-black px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95 uppercase tracking-wider"
+                  >
+                    Upgrade
+                  </Link>
+                )}
+              </div>
+
+              {subscription && subscription.plan !== 'free' && (
+                <div className="mt-6 border-t border-gray-100 dark:border-gray-800 pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  {subscription.current_period_end && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Renews on: <strong>{new Date(subscription.current_period_end).toLocaleDateString()}</strong>
+                    </span>
+                  )}
+                  {subscription.status !== 'cancelled' && (
+                    <button
+                      onClick={handleCancelSub}
+                      className="text-xs font-bold text-red-650 hover:text-red-500 transition-colors uppercase tracking-wider text-left sm:text-right"
+                    >
+                      Cancel subscription
+                    </button>
+                  )}
+                  {subscription.status === 'cancelled' && (
+                    <span className="text-xs font-semibold text-amber-500">
+                      Cancelled (expires at period end)
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Right: Usage Bar */}
+            <div className="bg-gray-50 dark:bg-gray-900/30 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 flex flex-col justify-center">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Submissions this month</span>
+                <span className="text-xs font-bold text-gray-700 dark:text-slate-300">
+                  {limitCheck?.used || 0} of {limitCheck?.limit || 25} used
+                </span>
+              </div>
+              
+              <div className="w-full h-3 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-500 ${
+                    ((limitCheck?.used || 0) / (limitCheck?.limit || 25)) * 100 < 70
+                      ? 'bg-emerald-500'
+                      : ((limitCheck?.used || 0) / (limitCheck?.limit || 25)) * 100 < 90
+                      ? 'bg-amber-500'
+                      : 'bg-rose-500'
+                  }`}
+                  style={{ width: `${Math.min(100, ((limitCheck?.used || 0) / (limitCheck?.limit || 25)) * 100)}%` }}
+                />
+              </div>
+
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3">
+                Resetting on your monthly registration billing boundary cycle.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* ── GITHUB INTEGRATION ── */}
       <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-xl overflow-hidden">

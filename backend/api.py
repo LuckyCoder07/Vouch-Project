@@ -10,12 +10,21 @@ from importlib import import_module
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse, RedirectResponse
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from supabase import create_client, Client
 import atexit
 import secrets
+import time
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from payments import PaymentManager
 
 # Load environment variables early
 load_dotenv()
@@ -65,12 +74,77 @@ if SUPABASE_URL and SUPABASE_SERVICE_KEY:
 else:
     supabase_init_error = "Missing SUPABASE_URL or SUPABASE_SERVICE_KEY"
 
+# Initialize Sentry
+sentry_sdk.init(
+    dsn         = os.getenv('SENTRY_DSN'),
+    environment = os.getenv('ENVIRONMENT', 'development'),
+    integrations= [FastApiIntegration()],
+    traces_sample_rate = 0.1
+)
+
 # Initialize FastAPI app
 app = FastAPI(title="Vouch API", version="1.0.0")
 
+# Initialize Rate Limiter
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Production security headers middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        env = os.getenv('ENVIRONMENT', 'development')
+        if env == 'production':
+            response.headers['Strict-Transport-Security'] = (
+                'max-age=31536000; includeSubDomains')
+            response.headers['X-Content-Type-Options'] = 'nosniff'
+            response.headers['X-Frame-Options'] = 'DENY'
+            response.headers['X-XSS-Protection'] = '1; mode=block'
+            response.headers['Referrer-Policy'] = (
+                'strict-origin-when-cross-origin')
+            response.headers['Permissions-Policy'] = (
+                'camera=(), microphone=(), geolocation=()')
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Enforce HTTPS in production
+if os.getenv('ENVIRONMENT', 'development') == 'production':
+    app.add_middleware(HTTPSRedirectMiddleware)
+
+# Request logging middleware
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start = time.time()
+        response = await call_next(request)
+        duration = (time.time() - start) * 1000
+        logger.info(
+            '%s %s %d %.1fms',
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration
+        )
+        if duration > 2000:
+            logger.warning('Slow request: %s %.1fms',
+                           request.url.path, duration)
+        return response
+
+app.add_middleware(RequestLoggingMiddleware)
+
+# CORS update for production
+ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    os.getenv('FRONTEND_URL', ''),
+    f"https://www.{os.getenv('FRONTEND_URL', '').replace('https://', '')}" if os.getenv('FRONTEND_URL') else ''
+]
+ALLOWED_ORIGINS = [o for o in ALLOWED_ORIGINS if o]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -78,10 +152,14 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Ensure all unhandled exceptions return JSON (never plain-text HTML)."""
+    sentry_sdk.capture_exception(exc)
+    logger.error('Unhandled error: %s', exc)
     return JSONResponse(
-        status_code=500,
-        content={"detail": str(exc) or "Internal Server Error"}
+        status_code = 500,
+        content = {
+            'error': 'Internal server error',
+            'message': 'Something went wrong. Our team has been notified.'
+        }
     )
 
 def generate_verification_code():
@@ -109,6 +187,7 @@ from plagiarism import PlagiarismDetector
 org_manager      = OrgManager()
 assignment_mgr   = AssignmentManager()
 plagiarism_det   = PlagiarismDetector()
+payment_mgr      = PaymentManager()
 scheduler = BackgroundScheduler() if BackgroundScheduler is not None else None
 run_anchor_job = None
 anchor_init_error: Optional[str] = None
@@ -162,7 +241,8 @@ class CertificateRequest(BaseModel):
     verification_code: str
 
 @app.post("/api/hash")
-async def api_hash(file: UploadFile = File(...), user_id: Optional[str] = Form(None)):
+@limiter.limit("30/minute")
+async def api_hash(request: Request, file: UploadFile = File(...), user_id: Optional[str] = Form(None)):
     try:
         suffix = ""
         if file.filename:
@@ -210,11 +290,27 @@ async def api_hash(file: UploadFile = File(...), user_id: Optional[str] = Form(N
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
 
 @app.post("/api/store")
-async def api_store(req: StoreRequest, authorization: Optional[str] = Header(None)):
+@limiter.limit("20/minute")
+async def api_store(request: Request, req: StoreRequest, authorization: Optional[str] = Header(None)):
     try:
         db = require_supabase()
         # Convert empty strings to None
         user_id = req.user_id if req.user_id and req.user_id.strip() else None
+        
+        if user_id:
+            limit_check = payment_mgr.check_submission_limit(user_id)
+            if not limit_check['allowed']:
+                raise HTTPException(
+                    status_code = 402,
+                    detail      = {
+                        'error':    'LIMIT_REACHED',
+                        'message':  (f"You've reached your monthly limit "
+                                     f"of {limit_check['limit']} submissions. "
+                                     f"Upgrade to Student Pro for unlimited."),
+                        'plan':     limit_check['plan'],
+                        'upgrade_url': f"{os.getenv('FRONTEND_URL')}/pricing"
+                    }
+                )
         
         # Determine which client to use (acting as user or service role)
         if authorization and authorization.startswith("Bearer "):
@@ -265,6 +361,9 @@ async def api_store(req: StoreRequest, authorization: Optional[str] = Header(Non
             "org_id": req.org_id
         }).execute()
         inserted_id = insert_res.data[0]['id']
+        
+        if user_id:
+            payment_mgr.increment_submission_count(user_id)
         
         # --- Integration Steps ---
         
@@ -362,7 +461,8 @@ async def api_store(req: StoreRequest, authorization: Optional[str] = Header(Non
         raise HTTPException(status_code=500, detail=f"Ledger Error: {str(e)}")
 
 @app.post("/api/verify")
-async def api_verify(file: UploadFile = File(...)):
+@limiter.limit("60/minute")
+async def api_verify(request: Request, file: UploadFile = File(...)):
     try:
         db = require_supabase()
         suffix = ""
@@ -448,7 +548,8 @@ async def api_certificate(req: CertificateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/records")
-async def api_records(user_id: Optional[str] = None):
+@limiter.limit("100/minute")
+async def api_records(request: Request, user_id: Optional[str] = None):
     try:
         db = require_supabase()
         query = db.table("submissions").select("*")
@@ -503,11 +604,64 @@ async def api_anchor_trigger():
 
 @app.get("/api/health")
 async def api_health():
+    supabase_ok = False
+    if supabase is not None:
+        try:
+            supabase.table('profiles').select('id').limit(1).execute()
+            supabase_ok = True
+        except Exception:
+            pass
+            
+    blockchain_ok = False
+    try:
+        from web3 import Web3
+        rpc_url = os.getenv('POLYGON_RPC_URL')
+        if rpc_url:
+            w3 = Web3(Web3.HTTPProvider(rpc_url))
+            blockchain_ok = w3.is_connected()
+    except Exception:
+        pass
+        
+    scheduler_running = False
+    if scheduler is not None:
+        scheduler_running = scheduler.running
+
     return {
-        "status": "ok" if supabase is not None else "degraded",
-        "version": "1.1.0",
-        "database_connected": supabase is not None,
-        "database_error": supabase_init_error
+        "status": "ok",
+        "version": "1.0.0",
+        "environment": os.getenv('ENVIRONMENT', 'development'),
+        "supabase": supabase_ok,
+        "blockchain": blockchain_ok,
+        "scheduler": scheduler_running,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Vouch API starting up — env: %s",
+                os.getenv('ENVIRONMENT'))
+    logger.info("Scheduler running: %s", scheduler.running if scheduler else False)
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("Vouch API shutting down")
+    if scheduler:
+        scheduler.shutdown(wait=False)
+
+@app.get("/api/version")
+async def api_version():
+    return {
+        "version": "1.0.0",
+        "phase": "5",
+        "features": [
+            "abt_hashing",
+            "blockchain_anchoring",
+            "rsa_signing",
+            "email_notifications",
+            "organizations",
+            "plagiarism_detection",
+            "stripe_billing"
+        ]
     }
 
 # --- Phase 3: GitHub OAuth Endpoints ---
@@ -618,7 +772,9 @@ async def github_disconnect(req: dict):
 # --- Phase 3: Batch Processing Endpoints ---
 
 @app.post("/api/batch")
+@limiter.limit("5/minute")
 async def api_batch(
+    request: Request,
     file: UploadFile = File(...),
     student_name: str = Form(...),
     user_id: Optional[str] = Form(None),
@@ -1074,3 +1230,83 @@ async def api_v1_vouch(req: dict, x_api_key: str = Header(...)):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
+
+# --- Payment & Subscription Endpoints ---
+
+class CheckoutRequest(BaseModel):
+    user_id: str
+    email: str
+    name: str
+    plan: str
+
+class CancelSubscriptionRequest(BaseModel):
+    user_id: str
+
+@app.post("/api/payments/checkout")
+@limiter.limit("10/minute")
+async def api_payments_checkout(request: Request, req: CheckoutRequest):
+    plan = req.plan
+    if plan not in ['student', 'classroom']:
+        raise HTTPException(status_code=400, detail="Plan must be 'student' or 'classroom'")
+    
+    # Map plan to price_id
+    if plan == 'student':
+        price_id = os.getenv('STRIPE_STUDENT_PRICE_ID')
+    else:
+        price_id = os.getenv('STRIPE_CLASSROOM_PRICE_ID')
+        
+    if not price_id:
+        raise HTTPException(status_code=500, detail=f"Price ID for plan '{plan}' is not configured")
+        
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+    
+    try:
+        url = payment_mgr.create_checkout_session(
+            user_id     = req.user_id,
+            email       = req.email,
+            name        = req.name,
+            price_id    = price_id,
+            plan        = plan,
+            success_url = f"{frontend_url}/pricing?success=true",
+            cancel_url  = f"{frontend_url}/pricing?cancelled=true"
+        )
+        return { "checkout_url": url }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/webhooks/stripe")
+async def api_webhooks_stripe(request: Request):
+    sig_header = request.headers.get('stripe-signature')
+    if not sig_header:
+        raise HTTPException(status_code=400, detail="Missing stripe-signature header")
+        
+    body = await request.body()
+    try:
+        payment_mgr.handle_webhook(body, sig_header)
+        return { "received": True }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/payments/subscription")
+async def api_payments_subscription(user_id: str):
+    try:
+        return payment_mgr.get_subscription(user_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/payments/cancel")
+async def api_payments_cancel(req: CancelSubscriptionRequest):
+    try:
+        payment_mgr.cancel_subscription(req.user_id)
+        return { "cancelled": True }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/payments/limit-check")
+async def api_payments_limit_check(user_id: str):
+    try:
+        return payment_mgr.check_submission_limit(user_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

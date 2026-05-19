@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import {
   UploadCloud,
   CheckCircle2,
@@ -30,6 +31,25 @@ export default function Dashboard() {
   const toast = useToast();
   const { user, profile, session } = useAuth();
   const { addNotification } = useNotifications();
+
+  const [limitCheck, setLimitCheck] = useState(null);
+
+  const fetchLimitCheck = async () => {
+    if (!user?.id) return;
+    try {
+      const res = await fetch(`/api/payments/limit-check?user_id=${user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLimitCheck(data);
+      }
+    } catch (err) {
+      console.error("Failed to check limit", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchLimitCheck();
+  }, [user]);
 
   const [activeTab, setActiveTab] = useState('vouch');
   const [dragActive, setDragActive] = useState(false);
@@ -208,6 +228,7 @@ export default function Dashboard() {
         setProgress(100);
         setUploadState('success');
         addNotification('vscore', 'V-Score Milestone', `Successfully notarized ${selectedFile.name}.`, '/profile');
+        fetchLimitCheck();
 
       } else {
         // Verify tab
@@ -306,6 +327,43 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Limit warning banners */}
+      {limitCheck && limitCheck.plan === 'free' && activeTab === 'vouch' && (
+        <div className="space-y-4">
+          {limitCheck.remaining === 0 ? (
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 p-5 rounded-[2rem] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="text-red-500 shrink-0" size={24} />
+                <p className="text-sm font-bold text-red-900 dark:text-red-300">
+                  You've reached your free limit for this month.
+                </p>
+              </div>
+              <Link 
+                to="/pricing"
+                className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-750 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95"
+              >
+                Upgrade to Student Pro to continue &rarr;
+              </Link>
+            </div>
+          ) : limitCheck.remaining <= 5 ? (
+            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 p-5 rounded-[2rem] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="text-amber-500 shrink-0" size={24} />
+                <p className="text-sm font-bold text-amber-900 dark:text-amber-300">
+                  ⚠️ You have {limitCheck.remaining} free submissions left this month. Upgrade for unlimited.
+                </p>
+              </div>
+              <Link 
+                to="/pricing"
+                className="text-xs font-black text-amber-600 dark:text-amber-400 hover:underline uppercase tracking-wider flex items-center gap-1.5"
+              >
+                Upgrade now &rarr;
+              </Link>
+            </div>
+          ) : null}
+        </div>
+      )}
+
       <div className={`bg-white/70 dark:bg-vouch-dark/40 backdrop-blur-2xl rounded-[3rem] p-8 md:p-12 shadow-2xl shadow-blue-900/5 border border-white dark:border-gray-800 relative overflow-hidden transition-all duration-500
               ${isUploading ? 'pointer-events-none' : ''}`}>
 
@@ -326,7 +384,24 @@ export default function Dashboard() {
           </button>
         </div>
 
-        <div className="p-8 md:p-12">
+        <div className="p-8 md:p-12 relative">
+          {isLimitReached && (
+            <div className="absolute inset-0 bg-white/60 dark:bg-slate-950/60 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-6 text-center pointer-events-auto animate-in fade-in duration-300">
+              <AlertCircle size={48} className="text-red-500 mb-4 animate-pulse" />
+              <h4 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Upgrade required to submit more files</h4>
+              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-6 font-semibold">
+                You've reached your free limit of 25 submissions for this month.
+              </p>
+              <Link 
+                to="/pricing"
+                className="px-8 py-4 bg-blue-600 hover:bg-blue-750 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20 transition active:scale-95 text-sm uppercase tracking-widest pointer-events-auto"
+              >
+                Upgrade to Student Pro &rarr;
+              </Link>
+            </div>
+          )}
+
+          <div className={isLimitReached ? 'pointer-events-none opacity-50' : ''}>
           {activeTab === 'vouch' && uploadState === 'idle' && !selectedFile && (
             <div className="mb-6 space-y-4 max-w-2xl mx-auto">
               <div>
@@ -514,6 +589,7 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>

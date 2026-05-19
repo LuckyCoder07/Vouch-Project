@@ -20,21 +20,42 @@ import History from "./pages/History";
 import BatchUpload from "./pages/BatchUpload";
 import OrgDashboard from "./pages/OrgDashboard";
 import OrgReport from "./pages/OrgReport";
+import Landing from "./pages/Landing";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Pricing from "./pages/Pricing";
 
 function AppRoutes() {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   return (
     <Routes>
+      {/* Public Landing Page */}
+      <Route
+        path="/"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <Landing />
+          )
+        }
+      />
+
       {/* Public Unprotected Verification Route */}
       <Route path="/verify/:code?" element={<PublicVerify />} />
 
-      {/* Public Route */}
+      {/* Public Pages */}
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/pricing" element={<Pricing />} />
+
+      {/* Public Login/Signup Route */}
       <Route
         path="/login"
         element={
           isAuthenticated ? (
-            <Navigate to="/dashboard" />
+            <Navigate to="/dashboard" replace />
           ) : (
             <Login />
           )
@@ -43,16 +64,14 @@ function AppRoutes() {
 
       {/* Protected Dashboard Routes */}
       <Route
-        path="/"
         element={
           isAuthenticated ? (
             <DashboardLayout />
           ) : (
-            <Navigate to="/login" />
+            <Navigate to="/login" replace />
           )
         }
       >
-        <Route index element={<Navigate to="/dashboard" />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="org" element={<OrgDashboard />} />
         <Route path="org/:orgId/report" element={<OrgReport />} />
