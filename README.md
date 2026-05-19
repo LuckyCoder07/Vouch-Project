@@ -1,3 +1,5 @@
+# Add to the top of your README.md:
+# ⚠️ Beta — UI overhaul in progress
 # Vouch - Immutable Code Notary & Proof of Integrity
 
 Vouch is a premium, cryptographically secure platform for code notarization and verification. It enables developers to prove the integrity of their work by recording structural code hashes on an immutable ledger, anchored to the Polygon blockchain.
