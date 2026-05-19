@@ -307,6 +307,7 @@ export default function Dashboard() {
   };
 
   const isUploading = uploadState === 'uploading';
+  const isLimitReached = limitCheck?.remaining === 0 && limitCheck?.plan === 'free' && activeTab === 'vouch';
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 pb-12 animate-in fade-in duration-500">
