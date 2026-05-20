@@ -241,10 +241,24 @@ class CodeHasher:
 
         if ext == ".py":
             return self._canonicalize_python(source)
-        elif ext in (".java", ".cpp"):
+
+        if ext in (".cpp", ".c", ".h"):
             return self._canonicalize_regex(source)
 
-        # For .txt (or unknown supported ext), perform comment stripping only
+        if ext in (".java",):
+            return self._canonicalize_regex(source)
+
+        if ext in (".js", ".jsx", ".ts", ".tsx"):
+            # Strip JS/TS single-line and block comments, then normalise whitespace
+            cleaned = re.sub(r"/\*.*?\*/", "", source, flags=re.S)
+            cleaned = re.sub(r"//.*?$", "", cleaned, flags=re.M)
+            return " ".join(cleaned.split())
+
+        if ext == ".json":
+            # Normalise whitespace only — JSON has no comments
+            return " ".join(source.split())
+
+        # Fallback for .txt and anything else supported
         cleaned = self._strip_block_and_line_comments(source)
         return " ".join(cleaned.split())
 

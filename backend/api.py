@@ -310,8 +310,14 @@ async def api_hash(request: Request, file: UploadFile = File(...), user_id: Opti
                 language = "python"
             elif suffix == ".java":
                 language = "java"
-            elif suffix == ".cpp":
+            elif suffix in (".cpp", ".c", ".h"):
                 language = "cpp"
+            elif suffix in (".js", ".jsx"):
+                language = "javascript"
+            elif suffix in (".ts", ".tsx"):
+                language = "typescript"
+            elif suffix == ".json":
+                language = "json"
             elif suffix == ".txt":
                 language = "text"
 

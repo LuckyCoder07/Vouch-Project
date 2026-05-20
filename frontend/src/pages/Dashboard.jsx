@@ -44,11 +44,14 @@ import { formatDistanceToNow } from 'date-fns';
 
 
 const ACCEPT_MAP = {
-  'auto': '.py,.java,.cpp,.txt',
-  '.py': '.py',
+  'auto': '.py,.java,.cpp,.c,.h,.js,.jsx,.ts,.tsx,.json,.txt',
+  '.py':   '.py',
   '.java': '.java',
-  '.cpp': '.cpp,.c,.h',
-  '.txt': '.txt'
+  '.cpp':  '.cpp,.c,.h',
+  '.js':   '.js,.jsx',
+  '.ts':   '.ts,.tsx',
+  '.json': '.json',
+  '.txt':  '.txt'
 };
 
 const STEPPER_STEPS = [
@@ -637,7 +640,7 @@ export default function Dashboard() {
                     File Type Spec
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {['auto', '.py', '.java', '.cpp', '.txt'].map((type) => (
+                    {['auto', '.py', '.java', '.cpp', '.js', '.ts', '.json', '.txt'].map((type) => (
                       <button
                         key={type}
                         type="button"
