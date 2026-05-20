@@ -1,3 +1,4 @@
+import API_URL from '../lib/apiUrl.js';
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -40,7 +41,7 @@ import {
 } from '../components/ui';
 import { formatDistanceToNow } from 'date-fns';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 
 const ACCEPT_MAP = {
   'auto': '.py,.java,.cpp,.txt',

@@ -1,3 +1,4 @@
+import API_URL from '../../lib/apiUrl.js';
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, useSpring, useTransform } from 'framer-motion';
 import { Crown, Trophy, Loader2 } from 'lucide-react';
@@ -5,7 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { Card, Avatar } from '../ui';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 
 // Animated Number Component
 const AnimatedNumber = ({ value }) => {

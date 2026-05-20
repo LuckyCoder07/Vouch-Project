@@ -1,3 +1,4 @@
+import API_URL from '../lib/apiUrl.js';
 import React, { useState } from 'react';
 import { 
   ShieldCheck, 
@@ -77,8 +78,7 @@ export default function KnowAboutVouch() {
     
     setIsSubmitting(true);
     try {
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${backendUrl}/api/query`, {
+      const response = await fetch(`${API_URL}/api/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_email: user.email, query })

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { API_URL } from './apiUrl.js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -7,7 +8,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export async function signUp(email, password, name, institution) {
   try {
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const backendUrl = API_URL;
     const response = await fetch(`${backendUrl}/api/auth/register`, {
       method: 'POST',
       headers: {

@@ -1,3 +1,4 @@
+import API_URL from '../../lib/apiUrl.js';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +16,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow, isToday, isYesterday, isThisWeek } from 'date-fns';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 
 const TYPE_CONFIG = {
   submission: {

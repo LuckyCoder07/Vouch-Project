@@ -1,3 +1,4 @@
+import API_URL from '../lib/apiUrl.js';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -11,7 +12,7 @@ import {
 import { Button, Card, CardHeader, CardBody, Avatar, Input, SkeletonTable } from '../components/ui';
 import AnchorBadge from '../components/ui/AnchorBadge';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 
 const RANKS = [
   { name: 'Newcomer', minScore: 0 },

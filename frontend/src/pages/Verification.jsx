@@ -1,3 +1,4 @@
+import API_URL from '../lib/apiUrl.js';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,7 +13,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Button, Avatar, Input } from '../components/ui';
 import AnchorBadge from '../components/ui/AnchorBadge';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 
 const SCAN_STEPS = [
   { label: "INITIALIZING VOUCH PROTOCOL", duration: 400 },

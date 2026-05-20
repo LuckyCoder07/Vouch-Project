@@ -1,3 +1,4 @@
+import API_URL from '../lib/apiUrl.js';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
@@ -12,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import AnchorBadge from '../components/ui/AnchorBadge';
 import { Button, Input, Card, Badge, SkeletonTable, EmptyState } from '../components/ui';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 
 // Language icon/color mapping
 const getLangConfig = (lang) => {

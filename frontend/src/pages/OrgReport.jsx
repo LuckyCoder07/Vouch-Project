@@ -1,10 +1,11 @@
+import API_URL from '../lib/apiUrl.js';
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Printer, Download, Users, FileCode2, BookOpen, AlertTriangle, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 
 export default function OrgReport() {
   const { orgId } = useParams();

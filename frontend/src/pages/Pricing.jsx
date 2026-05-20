@@ -1,3 +1,4 @@
+import API_URL from '../lib/apiUrl.js';
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -17,7 +18,7 @@ import {
   Info
 } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 
 export default function Pricing() {
   const { isAuthenticated, user } = useAuth();
