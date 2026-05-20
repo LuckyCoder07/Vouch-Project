@@ -64,3 +64,5 @@ yarl==1.23.0
 zstandard==0.25.0
 fpdf2>=2.7.0
 APScheduler>=3.10.0
+resend
+
