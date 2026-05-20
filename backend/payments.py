@@ -9,7 +9,13 @@ load_dotenv()
 # Initialize Supabase
 supabase_url = os.environ.get("SUPABASE_URL", "")
 supabase_key = os.environ.get("SUPABASE_SERVICE_KEY", "")
-supabase = create_client(supabase_url, supabase_key)
+
+class SupabaseDelegate:
+  def __getattr__(self, name):
+    client = create_client(supabase_url, supabase_key)
+    return getattr(client, name)
+
+supabase = SupabaseDelegate()
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -164,8 +170,7 @@ class PaymentManager:
     user_id = profile[0]['id']
     
     supabase.table('subscriptions').update({
-      'status': 'cancelled',
-      'plan':   'free'
+      'status': 'cancelled'
     }).eq('user_id', user_id).execute()
     
     supabase.table('profiles').update({

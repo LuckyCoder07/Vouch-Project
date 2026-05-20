@@ -19,8 +19,7 @@ from supabase import create_client, Client
 import atexit
 import secrets
 import time
-import sentry_sdk
-from sentry_sdk.integrations.fastapi import FastApiIntegration
+# Sentry dynamically imported only in production
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -61,6 +60,7 @@ from github_auth import GitHubOAuth
 from batch_processor import BatchProcessor
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")  # Required for user-scoped client in /api/store
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 # Initialize Supabase lazily/safely so the app can still boot and report health.
@@ -75,12 +75,15 @@ else:
     supabase_init_error = "Missing SUPABASE_URL or SUPABASE_SERVICE_KEY"
 
 # Initialize Sentry
-sentry_sdk.init(
-    dsn         = os.getenv('SENTRY_DSN'),
-    environment = os.getenv('ENVIRONMENT', 'development'),
-    integrations= [FastApiIntegration()],
-    traces_sample_rate = 0.1
-)
+if os.getenv('ENVIRONMENT') == 'production':
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    sentry_sdk.init(
+        dsn         = os.getenv('SENTRY_DSN'),
+        environment = 'production',
+        integrations= [FastApiIntegration()],
+        traces_sample_rate = 0.1
+    )
 
 # Initialize FastAPI app
 app = FastAPI(title="Vouch API", version="1.0.0")
@@ -152,7 +155,12 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    sentry_sdk.capture_exception(exc)
+    if os.getenv('ENVIRONMENT') == 'production':
+        try:
+            import sentry_sdk
+            sentry_sdk.capture_exception(exc)
+        except Exception:
+            pass
     logger.error('Unhandled error: %s', exc)
     return JSONResponse(
         status_code = 500,
@@ -214,12 +222,40 @@ if supabase is not None and run_anchor_job is not None and scheduler is not None
     atexit.register(lambda: scheduler.shutdown())
 
 def require_supabase() -> Client:
-    if supabase is None:
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         raise HTTPException(
             status_code=503,
-            detail=f"Database unavailable: {supabase_init_error or 'Supabase not initialized'}"
+            detail="Missing SUPABASE_URL or SUPABASE_SERVICE_KEY"
         )
-    return supabase
+    try:
+        return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {str(exc)}"
+        )
+
+def create_notification(
+    user_id: str,
+    notif_type: str,
+    title: str,
+    message: str,
+    action_url: str | None = None
+) -> None:
+    """Insert a notification row. Non-fatal — errors are logged but never raised."""
+    if not user_id:
+        return
+    try:
+        db = require_supabase()
+        db.table('notifications').insert({
+            'user_id':    user_id,
+            'type':       notif_type,
+            'title':      title,
+            'message':    message,
+            'action_url': action_url,
+        }).execute()
+    except Exception as exc:
+        logger.warning('create_notification failed: %s', exc)
 
 class StoreRequest(BaseModel):
     student_name: str
@@ -286,8 +322,6 @@ async def api_hash(request: Request, file: UploadFile = File(...), user_id: Opti
         logger.error(f"Hashing internal error: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Internal hashing error: {str(e)}")
 
-
-SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
 
 @app.post("/api/store")
 @limiter.limit("20/minute")
@@ -445,6 +479,26 @@ async def api_store(request: Request, req: StoreRequest, authorization: Optional
         else:
             plag_result = {'plagiarism_detected': False}
 
+        # --- Notification: File Vouched ---
+        if user_id:
+            create_notification(
+                user_id    = user_id,
+                notif_type = 'submission',
+                title      = 'File Vouched Successfully',
+                message    = f'{req.file_name} has been recorded in the ledger',
+                action_url = f'/verify/{verification_code}'
+            )
+
+        # --- Notification: Plagiarism alert to submitter ---
+        if plag_result.get('plagiarism_detected') and user_id:
+            create_notification(
+                user_id    = user_id,
+                notif_type = 'plagiarism',
+                title      = 'Plagiarism Check Alert',
+                message    = 'Your submission was flagged for review',
+                action_url = '/org'
+            )
+
         return {
             "success": True,
             "id": inserted_id,
@@ -563,6 +617,7 @@ async def api_records(request: Request, user_id: Optional[str] = None):
             "count": len(result.data)
         }
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/anchor/latest")
@@ -605,12 +660,12 @@ async def api_anchor_trigger():
 @app.get("/api/health")
 async def api_health():
     supabase_ok = False
-    if supabase is not None:
-        try:
-            supabase.table('profiles').select('id').limit(1).execute()
-            supabase_ok = True
-        except Exception:
-            pass
+    try:
+        db = require_supabase()
+        db.table('profiles').select('id').limit(1).execute()
+        supabase_ok = True
+    except Exception:
+        pass
             
     blockchain_ok = False
     try:
@@ -641,6 +696,8 @@ async def startup_event():
     logger.info("Vouch API starting up — env: %s",
                 os.getenv('ENVIRONMENT'))
     logger.info("Scheduler running: %s", scheduler.running if scheduler else False)
+    if not SUPABASE_ANON_KEY:
+        logger.warning("SUPABASE_ANON_KEY is not set — user-scoped submissions in /api/store will use service role fallback")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -796,14 +853,28 @@ async def api_batch(
             # Send batch summary email
             if user_email and result['successful'] > 0:
                 try:
-                    summary_msg = f"{result['successful']} of {result['total_files']} files successfully vouched. Batch code: {result['batch_code']}"
-                    # Note: We use the existing mailer but might need a specific batch method 
-                    # or repurpose the existing one if it allows custom messages.
-                    # For now, sending a notification.
-                    print(f"Batch Email: {summary_msg}")
-                    # mailer.send_batch_notification(user_email, summary_msg) # Assuming this exists or using a generic one
+                    batch_html = f"""
+                    <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px">
+                      <div style="background:white;border-radius:12px;padding:32px;border:1px solid #e5e7eb">
+                        <h2 style="color:#111827">Batch Vouch Complete</h2>
+                        <p style="color:#6b7280">Your batch upload has been processed.</p>
+                        <div style="background:#f3f4f6;border-radius:8px;padding:16px;margin:16px 0">
+                          <p style="margin:4px 0;font-size:14px;color:#374151"><strong>Batch Code:</strong> {result['batch_code']}</p>
+                          <p style="margin:4px 0;font-size:14px;color:#374151"><strong>Files Processed:</strong> {result['total_files']}</p>
+                          <p style="margin:4px 0;font-size:14px;color:#16a34a"><strong>Successful:</strong> {result['successful']}</p>
+                          <p style="margin:4px 0;font-size:14px;color:#dc2626"><strong>Failed:</strong> {result['failed']}</p>
+                        </div>
+                        <p style="font-size:12px;color:#9ca3af;text-align:center">Vouch — Immutable Code Notary</p>
+                      </div>
+                    </div>
+                    """
+                    mailer.send_raw_email(
+                        to_email=user_email,
+                        subject=f"Batch Vouch Complete — {result['batch_code']} ({result['successful']}/{result['total_files']} files)",
+                        html=batch_html
+                    )
                 except Exception as e:
-                    print(f"Batch email failed: {e}")
+                    logger.warning("Batch email failed (non-fatal): %s", e)
             
             return result
         finally:
@@ -873,7 +944,7 @@ async def extension_vouch(req: dict):
         db = require_supabase()
         
         # Check for duplicates
-        existing = db.table("submissions").select("verification_code, submitted_at").eq("structural_hash", req.get('structural_hash')).execute()
+        existing = db.table("submissions").select("verification_code, submitted_at").eq("raw_hash", req.get('raw_hash')).execute()
         if existing.data:
             return {
                 "verification_code": existing.data[0]['verification_code'],
@@ -927,6 +998,22 @@ async def get_orgs(user_id: str):
 async def join_org(req: dict):
     try:
         org = org_manager.join_org(req.get('invite_code'), req.get('user_id'))
+
+        # --- Notification: Notify org admin about new member ---
+        try:
+            db = require_supabase()
+            joiner_profile = db.table('profiles').select('name').eq('id', req.get('user_id')).execute()
+            joiner_name = joiner_profile.data[0]['name'] if joiner_profile.data else 'A new member'
+            create_notification(
+                user_id    = org.get('owner_id'),
+                notif_type = 'org_invite',
+                title      = 'New Member Joined',
+                message    = f'{joiner_name} joined {org.get("name", "your classroom")}',
+                action_url = '/org'
+            )
+        except Exception as notif_err:
+            logger.warning('Join org notification failed: %s', notif_err)
+
         return {"success": True, "org": org}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -1308,5 +1395,30 @@ async def api_payments_cancel(req: CancelSubscriptionRequest):
 async def api_payments_limit_check(user_id: str):
     try:
         return payment_mgr.check_submission_limit(user_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Notification Endpoints ---
+
+@app.get("/api/notifications")
+async def get_notifications(user_id: str):
+    try:
+        db = require_supabase()
+        result = db.table('notifications').select('*').eq('user_id', user_id).order('created_at', desc=True).limit(100).execute()
+        return {"notifications": result.data, "count": len(result.data)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/notifications/read")
+async def mark_notifications_read(req: dict):
+    try:
+        db = require_supabase()
+        user_id = req.get('user_id')
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is required")
+        result = db.table('notifications').update({'read': True}).eq('user_id', user_id).eq('read', False).execute()
+        return {"updated": len(result.data) if result.data else 0}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

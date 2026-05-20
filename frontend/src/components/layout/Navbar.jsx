@@ -206,7 +206,7 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
 
   const breadcrumbs = getBreadcrumbs();  return (
     <>
-      <header className="sticky top-0 z-30 w-full glass backdrop-blur-xl bg-white/90 dark:bg-gray-950/90 border-b border-gray-100 dark:border-gray-800/50 px-4 md:px-6 h-16 flex items-center justify-between transition-colors duration-300">
+      <header className="sticky top-0 z-30 w-full glass backdrop-blur-xl bg-white/90 dark:bg-gray-950/90 border-b border-gray-100 dark:border-gray-900 px-4 md:px-6 h-[72px] flex items-center justify-between transition-colors duration-300 relative">
         
         {/* Left Side: Logo (mobile) or Breadcrumb (desktop) */}
         <div className="flex items-center gap-3">
@@ -247,10 +247,10 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
         </div>
 
         {/* Center: Command Palette Trigger (desktop only) */}
-        <div className="hidden lg:block relative">
+        <div className="hidden lg:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <button
             onClick={() => setSearchOpen(true)}
-            className="flex items-center justify-between bg-gray-100/70 hover:bg-gray-200/50 dark:bg-gray-800/40 dark:hover:bg-gray-800/80 rounded-xl px-4 py-2 text-sm text-gray-400 w-64 text-left border border-transparent dark:border-gray-800 transition cursor-pointer select-none"
+            className="flex items-center justify-between bg-gray-100/70 hover:bg-gray-200/50 dark:bg-gray-800/40 dark:hover:bg-gray-800/80 rounded-xl px-4 py-2.5 text-sm text-gray-400 w-[420px] text-left border border-transparent dark:border-gray-800 transition cursor-pointer select-none"
           >
             <div className="flex items-center gap-2">
               <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />

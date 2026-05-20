@@ -75,7 +75,7 @@ export default function History() {
       }
     };
     fetchHistory();
-  }, [user?.id, session?.access_token, toast]);
+  }, [user?.id, session?.access_token]);
 
   // Computed data
   const filteredRecords = useMemo(() => {

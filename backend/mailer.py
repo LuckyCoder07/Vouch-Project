@@ -198,7 +198,7 @@ class Mailer:
               Enter this code on your Vouch profile page 
               under "Join Organization" to accept the invite.
             </p>
-            <a href="http://localhost:5173/profile" 
+            <a href="{os.getenv('FRONTEND_URL', 'http://localhost:5173')}/profile" 
                style="display:block;text-align:center;
                       background:#2563eb;color:white;
                       padding:14px;border-radius:8px;

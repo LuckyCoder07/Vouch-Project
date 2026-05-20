@@ -47,7 +47,7 @@ export default function DashboardLayout() {
 
       {/* Main Content Area */}
       <div 
-        className={`relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out ml-0 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}
+        className="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out ml-0"
       >
         <Navbar 
           toggleSidebar={toggleSidebar} 

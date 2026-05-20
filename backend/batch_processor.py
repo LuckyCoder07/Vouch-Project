@@ -17,7 +17,13 @@ load_dotenv()
 # Initialize Supabase client
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_SERVICE_KEY = os.getenv('SUPABASE_SERVICE_KEY')
-supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+class SupabaseDelegate:
+    def __getattr__(self, name):
+        client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        return getattr(client, name)
+
+supabase = SupabaseDelegate()
 
 # Initialize logger
 logger = logging.getLogger(__name__)

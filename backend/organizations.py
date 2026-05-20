@@ -17,7 +17,13 @@ logger.setLevel(logging.INFO)
 # Initialize Supabase
 supabase_url = os.environ.get("SUPABASE_URL", "")
 supabase_key = os.environ.get("SUPABASE_SERVICE_KEY", "")
-supabase = create_client(supabase_url, supabase_key)
+
+class SupabaseDelegate:
+    def __getattr__(self, name):
+        client = create_client(supabase_url, supabase_key)
+        return getattr(client, name)
+
+supabase = SupabaseDelegate()
 
 def generate_invite_code() -> str:
     """

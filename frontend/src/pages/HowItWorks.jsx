@@ -89,11 +89,11 @@ export default function HowItWorks() {
 
   return (
     <div className="font-sans bg-white dark:bg-gray-950 min-h-screen pb-20 animate-in fade-in duration-300">
-      <div className="max-w-5xl mx-auto px-4 py-12 space-y-20">
+      <div className="max-w-5xl mx-auto px-4 py-16 space-y-20">
         
         {/* SECTION 1 — Hero */}
-        <FadeInSection className="text-center space-y-6 max-w-3xl mx-auto pt-8">
-          <h1 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">
+        <FadeInSection className="text-center space-y-6 max-w-3xl mx-auto">
+          <h1 className="text-5xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">
             How Vouch Works
           </h1>
           <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto font-medium">

@@ -62,7 +62,7 @@ const getRelativeTime = (dateStr) => {
 };
 
 export default function OrgDashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, session } = useAuth();
   const toast = useToast();
   
   // Lists
@@ -367,8 +367,14 @@ export default function OrgDashboard() {
     try {
       const res = await fetch(`${API_URL}/api/orgs/${selectedOrg.id}/invite`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inviteEmail, invited_by_name: user.name })
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
+        body: JSON.stringify({ 
+          email: inviteEmail, 
+          invited_by_name: profile?.name || user?.email || 'Admin' 
+        })
       });
       if (!res.ok) throw new Error('Failed to send invite');
       setInviteSent(true);

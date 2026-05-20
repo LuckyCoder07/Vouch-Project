@@ -22,31 +22,65 @@ load_dotenv()
 
 class CertificateSigner:
     def __init__(self):
-        private_key_path = os.getenv('PRIVATE_KEY_PATH', 'vouch_private.pem')
-        public_key_path = os.getenv('PUBLIC_KEY_PATH', 'vouch_public.pem')
-
-        if not os.path.exists(private_key_path):
-            raise FileNotFoundError(f"Private key not found at {private_key_path}")
-        if not os.path.exists(public_key_path):
-            raise FileNotFoundError(f"Public key not found at {public_key_path}")
-
-        try:
-            with open(private_key_path, 'rb') as f:
+        private_key_pem = os.getenv('VOUCH_PRIVATE_KEY')
+        public_key_pem = os.getenv('VOUCH_PUBLIC_KEY')
+        
+        # Try loading private key from environment first, then fallback to file
+        if private_key_pem:
+            try:
+                # Clean up any escaped newlines if passed in single-line env formats
+                key_data = private_key_pem.replace("\\n", "\n").encode('utf-8')
                 self.private_key = serialization.load_pem_private_key(
-                    f.read(), 
+                    key_data, 
                     password=None, 
                     backend=default_backend()
                 )
+                logger.info("Loaded private key from environment variable.")
+            except Exception as e:
+                logger.error(f"Failed to load private key from environment variable: {str(e)}")
+                raise e
+        else:
+            private_key_path = os.getenv('PRIVATE_KEY_PATH', 'vouch_private.pem')
+            if not os.path.exists(private_key_path):
+                raise FileNotFoundError(f"Private key not found at {private_key_path} and VOUCH_PRIVATE_KEY env is empty")
+            try:
+                with open(private_key_path, 'rb') as f:
+                    self.private_key = serialization.load_pem_private_key(
+                        f.read(), 
+                        password=None, 
+                        backend=default_backend()
+                    )
+                logger.info(f"Loaded private key from file: {private_key_path}")
+            except Exception as e:
+                logger.error(f"Failed to load private key from file: {str(e)}")
+                raise e
 
-            with open(public_key_path, 'rb') as f:
+        # Try loading public key from environment first, then fallback to file
+        if public_key_pem:
+            try:
+                key_data = public_key_pem.replace("\\n", "\n").encode('utf-8')
                 self.public_key = serialization.load_pem_public_key(
-                    f.read(), 
+                    key_data, 
                     backend=default_backend()
                 )
-            logger.info("CertificateSigner initialized with RSA keys.")
-        except Exception as e:
-            logger.error(f"Failed to load keys: {str(e)}")
-            raise e
+                logger.info("Loaded public key from environment variable.")
+            except Exception as e:
+                logger.error(f"Failed to load public key from environment variable: {str(e)}")
+                raise e
+        else:
+            public_key_path = os.getenv('PUBLIC_KEY_PATH', 'vouch_public.pem')
+            if not os.path.exists(public_key_path):
+                raise FileNotFoundError(f"Public key not found at {public_key_path} and VOUCH_PUBLIC_KEY env is empty")
+            try:
+                with open(public_key_path, 'rb') as f:
+                    self.public_key = serialization.load_pem_public_key(
+                        f.read(), 
+                        backend=default_backend()
+                    )
+                logger.info(f"Loaded public key from file: {public_key_path}")
+            except Exception as e:
+                logger.error(f"Failed to load public key from file: {str(e)}")
+                raise e
 
     def sign_certificate(
         self,

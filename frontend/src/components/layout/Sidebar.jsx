@@ -88,13 +88,13 @@ export default function Sidebar({ isOpen, onClose, onLogout, collapsed = false, 
 
   const renderNavGroup = (group, isCollapsedSidebar) => {
     return (
-      <div key={group.title} className="space-y-1">
+      <div key={group.title} className={`space-y-1 w-full ${isCollapsedSidebar ? 'flex flex-col items-center' : ''}`}>
         {!isCollapsedSidebar && (
           <h4 className="px-5 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
             {group.title}
           </h4>
         )}
-        <div className="space-y-0.5">
+        <div className={`space-y-0.5 w-full ${isCollapsedSidebar ? 'flex flex-col items-center' : ''}`}>
           {group.items.map((item) => (
             <SidebarTooltip
               key={item.name}
@@ -107,8 +107,8 @@ export default function Sidebar({ isOpen, onClose, onLogout, collapsed = false, 
                 className={({ isActive }) =>
                   `flex items-center rounded-xl transition-all duration-200 relative group ${
                     isCollapsedSidebar 
-                      ? 'justify-center w-10 h-10 mx-auto' 
-                      : 'gap-3 px-3 py-2 mx-2'
+                      ? 'w-10 h-10 justify-center' 
+                      : 'w-[calc(100%-16px)] gap-3 px-3 py-2 mx-2 justify-start'
                   } ${
                     isActive
                       ? 'bg-vouch-50 dark:bg-vouch-955 text-vouch-600 dark:text-vouch-400 font-semibold'
@@ -142,7 +142,7 @@ export default function Sidebar({ isOpen, onClose, onLogout, collapsed = false, 
 
   const renderFooter = (isCollapsedSidebar) => {
     return (
-      <div className="mt-auto border-t border-gray-100 dark:border-gray-900 p-2 space-y-1 shrink-0">
+      <div className={`mt-auto border-t border-gray-100 dark:border-gray-900 p-2 space-y-1 shrink-0 flex flex-col ${isCollapsedSidebar ? 'items-center w-full' : ''}`}>
         {/* User Profile Card */}
         {!isCollapsedSidebar && (
           <div className="p-3 bg-gray-50 dark:bg-gray-900/60 rounded-xl border border-gray-100/80 dark:border-gray-800/80 flex items-center gap-2.5 mb-2 mx-1 select-none">
@@ -162,8 +162,8 @@ export default function Sidebar({ isOpen, onClose, onLogout, collapsed = false, 
         <SidebarTooltip content="Sign Out" enabled={isCollapsedSidebar}>
           <button
             onClick={onLogout}
-            className={`w-full flex items-center rounded-xl text-gray-500 hover:text-red-650 dark:text-gray-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 ${
-              isCollapsedSidebar ? 'justify-center h-10' : 'gap-3 px-3 py-2 mx-1 w-[calc(100%-8px)]'
+            className={`flex items-center rounded-xl text-gray-500 hover:text-red-650 dark:text-gray-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 ${
+              isCollapsedSidebar ? 'w-10 h-10 justify-center' : 'w-[calc(100%-8px)] gap-3 px-3 py-2 mx-1 justify-start'
             }`}
           >
             <LogOut className="w-5 h-5 shrink-0" />
@@ -175,8 +175,8 @@ export default function Sidebar({ isOpen, onClose, onLogout, collapsed = false, 
         {!isMobile && (
           <button
             onClick={onToggleCollapse}
-            className={`w-full flex items-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all duration-200 ${
-              isCollapsedSidebar ? 'justify-center h-10' : 'gap-3 px-3 py-2 mx-1 w-[calc(100%-8px)]'
+            className={`flex items-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all duration-200 ${
+              isCollapsedSidebar ? 'w-10 h-10 justify-center' : 'w-[calc(100%-8px)] gap-3 px-3 py-2 mx-1 justify-start'
             }`}
           >
             {isCollapsedSidebar ? <ChevronRight className="w-5 h-5 shrink-0" /> : <ChevronLeft className="w-5 h-5 shrink-0" />}
@@ -211,7 +211,7 @@ export default function Sidebar({ isOpen, onClose, onLogout, collapsed = false, 
               className="relative flex flex-col w-64 h-full bg-white dark:bg-gray-950 border-r border-gray-100 dark:border-gray-900"
             >
               {/* Header */}
-              <div className="flex items-center justify-between h-16 px-6 border-b border-gray-100 dark:border-gray-900 shrink-0">
+              <div className="flex items-center justify-between h-[72px] px-6 border-b border-gray-100 dark:border-gray-900 shrink-0">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-6 h-6 text-vouch-600 dark:text-vouch-400" />
                   <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-vouch-600 to-vouch-400 bg-clip-text text-transparent">
@@ -246,7 +246,7 @@ export default function Sidebar({ isOpen, onClose, onLogout, collapsed = false, 
           }`}
         >
           {/* Header */}
-          <div className={`flex items-center h-16 border-b border-gray-100 dark:border-gray-900 shrink-0 ${
+          <div className={`flex items-center h-[72px] border-b border-gray-100 dark:border-gray-900 shrink-0 ${
             collapsed ? 'justify-center' : 'justify-between px-6'
           }`}>
             {!collapsed ? (
