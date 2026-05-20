@@ -357,7 +357,7 @@ async def api_store(request: Request, req: StoreRequest, authorization: Optional
                 )
         
         # Determine which client to use (acting as user or service role)
-        if authorization and authorization.startswith("Bearer "):
+        if authorization and authorization.startswith("Bearer ") and SUPABASE_ANON_KEY:
             token = authorization.split(" ")[1]
             # Use ANON_KEY to act as an 'authenticated' user
             client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
