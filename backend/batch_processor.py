@@ -9,19 +9,21 @@ from datetime import datetime, timezone
 from hasher import CodeHasher
 from exceptions import VouchHashError
 from supabase import create_client
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
-
-# Initialize Supabase client
-SUPABASE_URL = os.getenv('SUPABASE_URL')
-SUPABASE_SERVICE_KEY = os.getenv('SUPABASE_SERVICE_KEY')
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / '.env')
 
 class SupabaseDelegate:
+    _client = None
+    
     def __getattr__(self, name):
-        client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-        return getattr(client, name)
+        if SupabaseDelegate._client is None:
+            url = os.environ.get("SUPABASE_URL", "")
+            key = os.environ.get("SUPABASE_SERVICE_KEY", "")
+            SupabaseDelegate._client = create_client(url, key)
+        return getattr(SupabaseDelegate._client, name)
 
 supabase = SupabaseDelegate()
 

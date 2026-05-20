@@ -1,19 +1,21 @@
 import stripe, os, logging, hashlib
 from datetime import datetime, timezone
+from pathlib import Path
 from dotenv import load_dotenv
 from supabase import create_client
 
 # Load .env
-load_dotenv()
-
-# Initialize Supabase
-supabase_url = os.environ.get("SUPABASE_URL", "")
-supabase_key = os.environ.get("SUPABASE_SERVICE_KEY", "")
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / '.env')
 
 class SupabaseDelegate:
+  _client = None
+  
   def __getattr__(self, name):
-    client = create_client(supabase_url, supabase_key)
-    return getattr(client, name)
+    if SupabaseDelegate._client is None:
+      url = os.environ.get("SUPABASE_URL", "")
+      key = os.environ.get("SUPABASE_SERVICE_KEY", "")
+      SupabaseDelegate._client = create_client(url, key)
+    return getattr(SupabaseDelegate._client, name)
 
 supabase = SupabaseDelegate()
 

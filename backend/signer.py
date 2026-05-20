@@ -4,6 +4,7 @@ import base64
 import json
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 from dotenv import load_dotenv
 
 from cryptography.hazmat.primitives import hashes, serialization
@@ -18,7 +19,7 @@ logging.basicConfig(
 logger = logging.getLogger("VouchSigner")
 
 # Load environment variables
-load_dotenv()
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / '.env')
 
 class CertificateSigner:
     def __init__(self):
@@ -41,6 +42,8 @@ class CertificateSigner:
                 raise e
         else:
             private_key_path = os.getenv('PRIVATE_KEY_PATH', 'vouch_private.pem')
+            if not os.path.isabs(private_key_path):
+                private_key_path = str(Path(__file__).resolve().parent / private_key_path)
             if not os.path.exists(private_key_path):
                 raise FileNotFoundError(f"Private key not found at {private_key_path} and VOUCH_PRIVATE_KEY env is empty")
             try:
@@ -69,6 +72,8 @@ class CertificateSigner:
                 raise e
         else:
             public_key_path = os.getenv('PUBLIC_KEY_PATH', 'vouch_public.pem')
+            if not os.path.isabs(public_key_path):
+                public_key_path = str(Path(__file__).resolve().parent / public_key_path)
             if not os.path.exists(public_key_path):
                 raise FileNotFoundError(f"Public key not found at {public_key_path} and VOUCH_PUBLIC_KEY env is empty")
             try:

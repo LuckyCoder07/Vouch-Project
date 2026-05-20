@@ -4,6 +4,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from typing import List, Dict
+from pathlib import Path
 
 try:
     from web3 import Web3
@@ -20,19 +21,30 @@ logging.basicConfig(
 logger = logging.getLogger("VouchAnchor")
 
 # Load environment variables
-load_dotenv()
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / '.env')
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+class SupabaseDelegate:
+    _client = None
+    
+    @property
+    def client(self):
+        if SupabaseDelegate._client is None:
+            url = os.getenv("SUPABASE_URL")
+            key = os.getenv("SUPABASE_SERVICE_KEY")
+            if url and key:
+                try:
+                    SupabaseDelegate._client = create_client(url, key)
+                except Exception as exc:
+                    logger.warning("Supabase client init failed for anchor job: %s", exc)
+        return SupabaseDelegate._client
 
-supabase: Client | None = None
-if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-    logger.warning("Missing Supabase credentials in .env (anchor job unavailable).")
-else:
-    try:
-        supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-    except Exception as exc:
-        logger.warning("Supabase client init failed for anchor job: %s", exc)
+    def __getattr__(self, name):
+        c = self.client
+        if c is None:
+            raise RuntimeError("Supabase client not initialized")
+        return getattr(c, name)
+
+supabase = SupabaseDelegate()
 
 class MerkleTree:
     def __init__(self, leaves: List[str]):
@@ -129,7 +141,7 @@ class BlockchainAnchor:
 
 def run_anchor_job():
     try:
-        if supabase is None:
+        if supabase.client is None:
             logger.warning("Skipping anchor job: database is not configured.")
             return
         # 1. Fetch unanchored submissions

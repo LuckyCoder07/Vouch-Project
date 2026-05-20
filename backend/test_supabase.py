@@ -24,7 +24,8 @@ from organizations import OrgManager
 from assignments import AssignmentManager
 from plagiarism import PlagiarismDetector
 
-load_dotenv()
+from pathlib import Path
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / '.env')
 url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_SERVICE_KEY")
 
