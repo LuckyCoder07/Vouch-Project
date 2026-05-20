@@ -328,19 +328,45 @@ export default function Dashboard() {
       setErrorMessage(null);
       // ----------------------------------------------------------
 
+      // Small warm-up delay so Render is fully ready after the ping
+      await delay(800);
+
       await delay(600);
       setActiveStep(1);
       setProgress(20);
 
-      const formData = new FormData();
+      let formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('user_id', user?.id || '');
 
-      const hashRes = await fetchWithTimeout(`${API_URL}/api/hash`, {
-        method: 'POST',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        body: formData
-      }, 90000);
+      // Retry the hash call up to 3 times on network-level failures ("Failed to fetch")
+      let hashRes;
+      let lastHashErr;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          hashRes = await fetchWithTimeout(`${API_URL}/api/hash`, {
+            method: 'POST',
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+            body: formData
+          }, 90000);
+          lastHashErr = null;
+          break; // success — exit retry loop
+        } catch (fetchErr) {
+          lastHashErr = fetchErr;
+          console.warn(`Hash attempt ${attempt} failed:`, fetchErr.name, fetchErr.message);
+          if (attempt < 3) {
+            // Rebuild formData for next attempt (consumed streams need reset)
+            const retryForm = new FormData();
+            retryForm.append('file', selectedFile);
+            retryForm.append('user_id', user?.id || '');
+            formData = retryForm;
+            await delay(2000 * attempt);
+          }
+        }
+      }
+      if (lastHashErr) {
+        throw new Error(`Network error (${lastHashErr.name}): ${lastHashErr.message}. Please try again.`);
+      }
 
       if (!hashRes.ok) {
         let errMsg = 'Hashing failed';
