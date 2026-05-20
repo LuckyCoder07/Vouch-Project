@@ -667,6 +667,10 @@ async def api_anchor_trigger():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 @app.get("/api/health")
 async def api_health():
     supabase_ok = False
