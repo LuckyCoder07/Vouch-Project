@@ -282,6 +282,31 @@ export default function Dashboard() {
 
   const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
+  // Fetches a URL with a timeout — prevents the browser from hanging forever
+  const fetchWithTimeout = (url, options = {}, timeoutMs = 90000) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { ...options, signal: controller.signal })
+      .finally(() => clearTimeout(id));
+  };
+
+  // Wakes up the Render free-tier server before sending real data.
+  // Returns true once awake, throws after maxWaitMs.
+  const wakeUpBackend = async (maxWaitMs = 70000) => {
+    const pingUrl = `${API_URL}/api/ping`;
+    const started = Date.now();
+    while (Date.now() - started < maxWaitMs) {
+      try {
+        const res = await fetchWithTimeout(pingUrl, { method: 'GET' }, 10000);
+        if (res.ok) return true;
+      } catch (_) {
+        // server still sleeping — keep trying
+      }
+      await delay(3000);
+    }
+    throw new Error('Server took too long to start. Please try again in a moment.');
+  };
+
   async function triggerUpload() {
     if (!selectedFile) return;
 
@@ -293,6 +318,12 @@ export default function Dashboard() {
     const token = session?.access_token;
 
     try {
+      // --- Step 0: Wake up the Render server if it is sleeping ---
+      setErrorMessage('🟡 Connecting to server... (first request may take ~30s)');
+      await wakeUpBackend();
+      setErrorMessage(null);
+      // ----------------------------------------------------------
+
       await delay(600);
       setActiveStep(1);
       setProgress(20);
@@ -301,11 +332,11 @@ export default function Dashboard() {
       formData.append('file', selectedFile);
       formData.append('user_id', user?.id || '');
 
-      const hashRes = await fetch(`${API_URL}/api/hash`, {
+      const hashRes = await fetchWithTimeout(`${API_URL}/api/hash`, {
         method: 'POST',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         body: formData
-      });
+      }, 90000);
 
       if (!hashRes.ok) {
         let errMsg = 'Hashing failed';
@@ -326,7 +357,7 @@ export default function Dashboard() {
         setActiveStep(3);
         setProgress(75);
 
-        const storeRes = await fetch(`${API_URL}/api/store`, {
+        const storeRes = await fetchWithTimeout(`${API_URL}/api/store`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -392,7 +423,7 @@ export default function Dashboard() {
 
         const verifyForm = new FormData();
         verifyForm.append('file', selectedFile);
-        const verifyRes = await fetch(`${API_URL}/api/verify`, {
+        const verifyRes = await fetchWithTimeout(`${API_URL}/api/verify`, {
           method: 'POST',
           headers: token ? { 'Authorization': `Bearer ${token}` } : {},
           body: verifyForm
@@ -881,6 +912,19 @@ export default function Dashboard() {
                     <Download className="w-4 h-4" />
                     Download Certificate
                   </button>
+                </motion.div>
+              )}
+
+              {/* WAKING UP STATUS CARD */}
+              {uploadState === 'uploading' && errorMessage && errorMessage.includes('Connecting to server') && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="p-4 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800/40 rounded-xl text-left text-xs font-semibold text-yellow-700 dark:text-yellow-400 flex gap-2 animate-in fade-in"
+                >
+                  <span className="shrink-0 mt-0.5 animate-spin">⏳</span>
+                  <p className="font-mono">{errorMessage}</p>
                 </motion.div>
               )}
 

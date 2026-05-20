@@ -671,6 +671,12 @@ async def api_anchor_trigger():
 def health():
     return {"status": "ok"}
 
+@app.get("/api/ping")
+async def api_ping():
+    """Lightweight wake-up endpoint. Returns instantly so the frontend can
+    wake Render's free-tier server before making real API calls."""
+    return {"ok": True}
+
 @app.get("/api/health")
 async def api_health():
     supabase_ok = False
