@@ -31,22 +31,32 @@ load_dotenv()
 # Initialize logger
 logger = logging.getLogger(__name__)
 
+# Robust local imports that don't mask missing third-party dependencies
 try:
-    from .hasher import CodeHasher
-    from .certificate import Certificate
-    from .signer import CertificateSigner
-    from .mailer import Mailer
-    from .exceptions import VouchHashError, VouchCertError
-except ImportError:
-    # Fallbacks for direct script execution / non-package contexts.
+    from hasher import CodeHasher
+    from certificate import Certificate
+    from signer import CertificateSigner
+    from mailer import Mailer
+    from exceptions import VouchHashError, VouchCertError
+except ImportError as e:
+    # If the ImportError is due to a missing third-party package (like fpdf2, apscheduler, etc.)
+    # and NOT our own local modules, we should raise it immediately so it doesn't get masked.
+    missing_name = getattr(e, 'name', None)
+    if missing_name and missing_name not in ['hasher', 'certificate', 'signer', 'mailer', 'exceptions']:
+        raise e
+        
     try:
-        from hasher import CodeHasher
-        from certificate import Certificate
-        from signer import CertificateSigner
-        from mailer import Mailer
-        from exceptions import VouchHashError, VouchCertError
-    except ImportError:
-        from hasher import CodeHasher
+        from .hasher import CodeHasher
+        from .certificate import Certificate
+        from .signer import CertificateSigner
+        from .mailer import Mailer
+        from .exceptions import VouchHashError, VouchCertError
+    except ImportError as e2:
+        missing_name2 = getattr(e2, 'name', None)
+        if missing_name2 and missing_name2 not in ['hasher', 'certificate', 'signer', 'mailer', 'exceptions', 'backend']:
+            raise e2
+            
+        from backend.hasher import CodeHasher
         from backend.certificate import Certificate
         from backend.signer import CertificateSigner
         from backend.mailer import Mailer
