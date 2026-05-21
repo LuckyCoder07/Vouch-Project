@@ -20,7 +20,8 @@ import {
   FolderArchive,
   Clock,
   Info,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 import { useToast } from '../components/ui/Toast';
 import { useAuth } from '../context/AuthContext';
@@ -274,6 +275,13 @@ export default function Dashboard() {
   };
 
   const processFile = (file) => {
+    const SUPPORTED = ['.py', '.java', '.cpp', '.c', '.h', '.txt'];
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    if (!SUPPORTED.includes(ext)) {
+      setUploadState('error');
+      setErrorMessage(`Unsupported file type "${ext}". Vouch only accepts: .py, .java, .cpp, .c, .txt files.`);
+      return;
+    }
     setSelectedFile(file);
     setProgress(0);
     setActiveStep(-1);
@@ -785,6 +793,29 @@ export default function Dashboard() {
                 </button>
 
               </div>
+            )}
+
+            {(uploadState === 'uploading' || uploadState === 'success') && selectedFile && (
+                <div className="mt-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                            <FileCode2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{selectedFile.name}</p>
+                            <p className="text-xs text-gray-400">{(selectedFile.size / 1024).toFixed(1)} KB · {hashResult?.language || 'Detecting...'}</p>
+                        </div>
+                        {uploadState === 'uploading' && (
+                            <Loader2 className="w-4 h-4 text-blue-400 animate-spin shrink-0" />
+                        )}
+                    </div>
+                    {hashResult?.structural_hash && (
+                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-1">Structural Hash</p>
+                            <p className="text-xs font-mono text-gray-600 dark:text-gray-300 truncate">{hashResult.structural_hash.slice(0, 40)}...</p>
+                        </div>
+                    )}
+                </div>
             )}
 
             {/* While uploading progress bar details */}

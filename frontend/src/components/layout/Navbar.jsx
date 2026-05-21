@@ -206,7 +206,7 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
 
   const breadcrumbs = getBreadcrumbs();  return (
     <>
-      <header className="sticky top-0 z-30 w-full glass backdrop-blur-xl bg-white/90 dark:bg-gray-950/90 border-b border-gray-100 dark:border-gray-900 px-4 md:px-6 h-[72px] flex items-center justify-between transition-colors duration-300 relative">
+      <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-gray-100 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl sticky top-0 z-40 transition-colors duration-300 w-full">
         
         {/* Left Side: Logo (mobile) or Breadcrumb (desktop) */}
         <div className="flex items-center gap-3">
@@ -246,15 +246,15 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
           </div>
         </div>
 
-        {/* Center: Command Palette Trigger (desktop only) */}
-        <div className="hidden lg:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        {/* Center: Command Palette Trigger */}
+        <div className="flex-1 hidden md:flex justify-center max-w-xl mx-auto">
           <button
             onClick={() => setSearchOpen(true)}
-            className="flex items-center justify-between bg-gray-100/70 hover:bg-gray-200/50 dark:bg-gray-800/40 dark:hover:bg-gray-800/80 rounded-xl px-4 py-2.5 text-sm text-gray-400 w-[420px] text-left border border-transparent dark:border-gray-800 transition cursor-pointer select-none"
+            className="flex items-center justify-between bg-gray-100/70 hover:bg-gray-200/50 dark:bg-gray-800/40 dark:hover:bg-gray-800/80 rounded-xl px-4 py-2.5 min-w-[320px] md:min-w-[420px] text-left border border-transparent dark:border-gray-800 transition cursor-pointer select-none"
           >
             <div className="flex items-center gap-2">
               <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-              <span className="font-medium text-xs">Search or jump to...</span>
+              <span className="font-medium text-sm text-gray-400">Search anything...</span>
             </div>
             <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[10px] text-gray-400 font-mono shadow-sm">
               ⌘K
@@ -263,15 +263,14 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
         </div>
 
         {/* Right Side: Theme Toggle, Notifications, User Menu */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 md:gap-3">
           {/* Mobile search icon trigger */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="lg:hidden p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center gap-1.5"
+            className="md:hidden p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center gap-1.5"
             aria-label="Open search command palette"
           >
             <Search className="w-4 h-4" />
-            <span className="hidden md:flex badge-gray text-[10px] scale-90">⌘K</span>
           </button>
 
           {/* Theme Toggle */}
@@ -282,7 +281,7 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
                   variant="ghost"
                   size="sm"
                   onClick={toggleTheme}
-                  className="w-9 h-9 p-0 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                  className="p-2 h-auto w-auto rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                   aria-label="Toggle theme"
                 >
                   {isDarkMode ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
@@ -306,17 +305,25 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
             variant="ghost"
             size="sm"
             onClick={() => setNotifCenterOpen(true)}
-            className="relative w-9 h-9 p-0 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            className="relative p-2 h-auto w-auto rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
             aria-label="Toggle notifications"
           >
-            <Bell className="w-4.5 h-4.5" />
+            <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 flex h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-900" />
+              <span className="absolute top-0 right-0 flex h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-900" />
             )}
           </Button>
 
           {/* User Menu Dropdown */}
-          <div className="relative" ref={userMenuRef}>
+          <div className="relative flex items-center gap-2" ref={userMenuRef}>
+            <div className="hidden md:flex flex-col items-end mr-1">
+              <p className="font-semibold text-sm text-gray-900 dark:text-white leading-tight">
+                {profile?.name || user?.email?.split('@')[0] || 'User'}
+              </p>
+              <p className="text-[10px] text-blue-400 uppercase font-bold tracking-wider leading-tight">
+                {profile?.plan?.toUpperCase() || 'FREE'}
+              </p>
+            </div>
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center focus:outline-none"
@@ -337,7 +344,7 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-2 w-56 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 glass p-1.5 z-50"
+                  className="absolute right-0 mt-2 w-56 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 glass p-1.5 z-50 top-10"
                 >
                   <div className="px-3 py-2 text-xs">
                     <p className="font-bold text-gray-900 dark:text-white truncate">
