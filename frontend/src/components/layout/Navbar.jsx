@@ -28,7 +28,8 @@ import {
   Key, 
   FilePlus, 
   FileSearch,
-  LayoutDashboard
+  LayoutDashboard,
+  Settings
 } from 'lucide-react';
 
 const pathMap = {
@@ -53,6 +54,8 @@ const PALETTE_ITEMS = [
   { label: 'Organization', path: '/org', category: 'Navigation', icon: Building2 },
   { label: 'History', path: '/history', category: 'Navigation', icon: Clock },
   { label: 'Profile', path: '/profile', category: 'Navigation', icon: User },
+  { label: 'Settings', path: '/settings', category: 'Navigation', icon: Settings },
+  { label: 'Know About Vouch', path: '/know-about-vouch', category: 'Navigation', icon: Info },
   // Actions
   { label: 'Vouch a file', path: '/dashboard', category: 'Actions', icon: FilePlus },
   { label: 'Verify a file', path: '/verification', category: 'Actions', icon: FileSearch },
@@ -314,6 +317,31 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
             )}
           </Button>
 
+          {/* Settings Button */}
+          <Tooltip.Provider>
+            <Tooltip.Root delayDuration={100}>
+              <Tooltip.Trigger asChild>
+                <button
+                  onClick={() => navigate('/settings')}
+                  className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition hidden md:flex items-center justify-center"
+                  aria-label="Settings"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Content
+                  side="bottom"
+                  sideOffset={8}
+                  className="z-50 px-3 py-1.5 text-xs font-semibold text-white bg-gray-900 dark:bg-gray-800 rounded-lg shadow-md animate-in fade-in zoom-in-95 duration-100"
+                >
+                  Settings
+                  <Tooltip.Arrow className="fill-gray-900 dark:fill-gray-800" />
+                </Tooltip.Content>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </Tooltip.Provider>
+
           {/* User Menu Dropdown */}
           <div className="relative flex items-center gap-2" ref={userMenuRef}>
             <div className="hidden md:flex flex-col items-end mr-1">
@@ -374,6 +402,13 @@ export default function Navbar({ toggleSidebar, isDarkMode, toggleTheme }) {
                   >
                     <Clock className="w-3.5 h-3.5 text-gray-400" />
                     History
+                  </button>
+                  <button
+                    onClick={() => { navigate('/settings'); setUserMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-850 transition"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-gray-400" />
+                    Settings
                   </button>
 
                   <div className="my-1 border-t border-gray-100 dark:border-gray-850" />

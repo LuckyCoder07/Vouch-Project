@@ -120,75 +120,67 @@ export default function HowItWorks() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-7 items-center gap-4">
-            {/* Step 1 */}
-            <div className="md:col-span-1 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 text-center space-y-3 shadow-soft h-full flex flex-col justify-between">
-              <div className="space-y-2">
-                <span className="text-xs font-black text-vouch-600 dark:text-vouch-400">01</span>
-                <div className="w-10 h-10 rounded-xl bg-vouch-50 dark:bg-vouch-950/20 text-vouch-600 dark:text-vouch-400 flex items-center justify-center mx-auto">
-                  <UploadCloud className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white">Upload</h3>
+          <div className="flex flex-col md:flex-row items-stretch gap-3">
+            {/* Step 1 — Upload */}
+            <div className="flex-1 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 text-center space-y-4 shadow-sm">
+              <span className="text-xs font-black text-vouch-600 dark:text-vouch-400 block">01</span>
+              <div className="w-12 h-12 rounded-2xl bg-vouch-50 dark:bg-vouch-950/20 text-vouch-600 dark:text-vouch-400 flex items-center justify-center mx-auto">
+                <UploadCloud className="w-6 h-6" />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-4">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Upload</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                 Submit your .py, .java, .cpp, or .txt file via the dashboard or VS Code extension.
               </p>
             </div>
 
-            {/* Arrow 1 */}
-            <div className="hidden md:flex justify-center text-gray-300">
+            {/* Arrow */}
+            <div className="hidden md:flex items-center justify-center text-gray-300 dark:text-gray-700 shrink-0">
               <ChevronRight className="w-6 h-6" />
             </div>
 
-            {/* Step 2 */}
-            <div className="md:col-span-1 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 text-center space-y-3 shadow-soft h-full flex flex-col justify-between">
-              <div className="space-y-2">
-                <span className="text-xs font-black text-vouch-600 dark:text-vouch-400">02</span>
-                <div className="w-10 h-10 rounded-xl bg-vouch-50 dark:bg-vouch-950/20 text-vouch-600 dark:text-vouch-400 flex items-center justify-center mx-auto">
-                  <Code2 className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white">Normalize</h3>
+            {/* Step 2 — Normalize */}
+            <div className="flex-1 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 text-center space-y-4 shadow-sm">
+              <span className="text-xs font-black text-vouch-600 dark:text-vouch-400 block">02</span>
+              <div className="w-12 h-12 rounded-2xl bg-vouch-50 dark:bg-vouch-950/20 text-vouch-600 dark:text-vouch-400 flex items-center justify-center mx-auto">
+                <Code2 className="w-6 h-6" />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-4">
-                Python files are parsed via Python's ast module into an Abstract Behavior Tree. Comments and variable names are stripped.
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Normalize</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                Python files are parsed via Python's ast module into an Abstract Behavior Tree. Comments and variable names are normalized.
               </p>
             </div>
 
-            {/* Arrow 2 */}
-            <div className="hidden md:flex justify-center text-gray-300">
+            {/* Arrow */}
+            <div className="hidden md:flex items-center justify-center text-gray-300 dark:text-gray-700 shrink-0">
               <ChevronRight className="w-6 h-6" />
             </div>
 
-            {/* Step 3 */}
-            <div className="md:col-span-1 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 text-center space-y-3 shadow-soft h-full flex flex-col justify-between">
-              <div className="space-y-2">
-                <span className="text-xs font-black text-vouch-600 dark:text-vouch-400">03</span>
-                <div className="w-10 h-10 rounded-xl bg-vouch-50 dark:bg-vouch-950/20 text-vouch-600 dark:text-vouch-400 flex items-center justify-center mx-auto">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white">Hash</h3>
+            {/* Step 3 — Hash */}
+            <div className="flex-1 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 text-center space-y-4 shadow-sm">
+              <span className="text-xs font-black text-vouch-600 dark:text-vouch-400 block">03</span>
+              <div className="w-12 h-12 rounded-2xl bg-vouch-50 dark:bg-vouch-950/20 text-vouch-600 dark:text-vouch-400 flex items-center justify-center mx-auto">
+                <ShieldCheck className="w-6 h-6" />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-4">
-                The canonical representation is hashed with SHA3-256 producing a deterministic structural fingerprint.
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Hash</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                The canonical representation is hashed with SHA3-256, producing a deterministic structural fingerprint.
               </p>
             </div>
 
-            {/* Arrow 3 */}
-            <div className="hidden md:flex justify-center text-gray-300">
+            {/* Arrow */}
+            <div className="hidden md:flex items-center justify-center text-gray-300 dark:text-gray-700 shrink-0">
               <ChevronRight className="w-6 h-6" />
             </div>
 
-            {/* Step 4 */}
-            <div className="md:col-span-1 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 text-center space-y-3 shadow-soft h-full flex flex-col justify-between">
-              <div className="space-y-2">
-                <span className="text-xs font-black text-vouch-600 dark:text-vouch-400">04</span>
-                <div className="w-10 h-10 rounded-xl bg-vouch-50 dark:bg-vouch-950/20 text-vouch-600 dark:text-vouch-400 flex items-center justify-center mx-auto">
-                  <Link2 className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white">Anchor</h3>
+            {/* Step 4 — Anchor */}
+            <div className="flex-1 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 text-center space-y-4 shadow-sm">
+              <span className="text-xs font-black text-vouch-600 dark:text-vouch-400 block">04</span>
+              <div className="w-12 h-12 rounded-2xl bg-vouch-50 dark:bg-vouch-950/20 text-vouch-600 dark:text-vouch-400 flex items-center justify-center mx-auto">
+                <Link2 className="w-6 h-6" />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-4">
-                Every 24 hours, unanchored hashes are collected into a Merkle tree and the root is written to Polygon Amoy via self-transfer tx.
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Anchor</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                Every 24 hours, unanchored hashes are collected into a Merkle tree and the root is written to Polygon Amoy.
               </p>
             </div>
           </div>

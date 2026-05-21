@@ -15,7 +15,10 @@ import {
   LogOut,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FileBadge,
+  Settings,
+  Info
 } from 'lucide-react';
 
 const GROUPS = [
@@ -30,7 +33,8 @@ const GROUPS = [
     title: 'Verify',
     items: [
       { name: 'Verification', icon: ShieldCheck, path: '/verification' },
-      { name: 'History', icon: Clock, path: '/history' }
+      { name: 'History', icon: Clock, path: '/history' },
+      { name: 'Certificates', icon: FileBadge, path: '/certificates' }
     ]
   },
   {
@@ -43,7 +47,9 @@ const GROUPS = [
     title: 'Account',
     items: [
       { name: 'Profile', icon: User, path: '/profile' },
-      { name: 'How It Works', icon: HelpCircle, path: '/how-it-works' }
+      { name: 'Settings', icon: Settings, path: '/settings' },
+      { name: 'How It Works', icon: HelpCircle, path: '/how-it-works' },
+      { name: 'Know About Vouch', icon: Info, path: '/know-about-vouch' }
     ]
   }
 ];
