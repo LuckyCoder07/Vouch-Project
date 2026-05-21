@@ -11,10 +11,32 @@
 const RENDER_BACKEND = 'https://vouch-project.onrender.com';
 const LOCAL_BACKEND  = 'http://localhost:8000';
 
-export const API_URL =
-  import.meta.env.VITE_API_URL ||
-  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? RENDER_BACKEND
-    : LOCAL_BACKEND);
+const getApiUrl = () => {
+  if (typeof window === 'undefined') {
+    return import.meta.env.VITE_API_URL || RENDER_BACKEND;
+  }
 
+  const hostname = window.location.hostname;
+  const isLocalhost =
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]' ||
+    hostname.endsWith('.local');
+
+  const envUrl = import.meta.env.VITE_API_URL;
+
+  if (isLocalhost) {
+    // Local development environment
+    return envUrl || LOCAL_BACKEND;
+  } else {
+    // Production/remote environment
+    // Only use VITE_API_URL if it is set and does not point to a local hostname/IP
+    if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1') && !envUrl.includes('::1')) {
+      return envUrl;
+    }
+    return RENDER_BACKEND;
+  }
+};
+
+export const API_URL = getApiUrl();
 export default API_URL;

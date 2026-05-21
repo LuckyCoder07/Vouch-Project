@@ -33,21 +33,23 @@ const TypewriterCode = () => {
         return 'A'
     return 'B'`;
   const [text, setText] = useState('');
+  const [trigger, setTrigger] = useState(0);
   
   useEffect(() => {
     let i = 0;
     const interval = setInterval(() => {
-      setText(code.slice(0, i));
+      setText(code.slice(0, i + 1));
       i++;
-      if (i > code.length) {
+      if (i >= code.length) {
         clearInterval(interval);
         setTimeout(() => {
           setText('');
+          setTrigger(prev => prev + 1);
         }, 5000);
       }
     }, 45);
     return () => clearInterval(interval);
-  }, [text === '']);
+  }, [trigger]);
 
   return (
     <pre className="bg-gray-900 text-blue-400 font-mono text-xs p-6 rounded-2xl overflow-x-auto h-40 leading-relaxed border border-gray-800 shadow-inner">
@@ -337,12 +339,18 @@ export default function HowItWorks() {
               Get instant cryptographic notarizations and build your public, verified verification ledger today.
             </p>
           </div>
-          <div className="relative z-10">
+          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link 
               to="/dashboard" 
-              className="inline-flex items-center justify-center px-6 py-3 bg-white text-vouch-600 hover:bg-gray-50 transition-colors rounded-xl font-bold text-sm shadow-md"
+              className="inline-flex items-center justify-center px-6 py-3 bg-white text-vouch-600 hover:bg-gray-50 transition-colors rounded-xl font-bold text-sm shadow-md w-full sm:w-auto"
             >
               Go to Dashboard
+            </Link>
+            <Link 
+              to="/know-about-vouch" 
+              className="inline-flex items-center justify-center px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors rounded-xl font-bold text-sm shadow-md w-full sm:w-auto"
+            >
+              Know About Vouch
             </Link>
           </div>
         </FadeInSection>

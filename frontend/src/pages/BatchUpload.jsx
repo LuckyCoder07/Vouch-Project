@@ -16,7 +16,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
 
-const API_URL = ''; // Using relative paths as seen in other components
+import API_URL from '../lib/apiUrl.js';
 
 export default function BatchUpload() {
   const { user, profile } = useAuth();

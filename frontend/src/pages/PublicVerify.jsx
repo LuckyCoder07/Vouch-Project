@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import API_URL from '../lib/apiUrl.js';
 import { 
   ShieldCheck, 
   Search, 
@@ -44,7 +45,7 @@ export default function PublicVerify() {
 
   async function fetchAnchorInfo() {
     try {
-      const res = await fetch(`/api/anchor/latest`);
+      const res = await fetch(`${API_URL}/api/anchor/latest`);
       if (res.ok) {
         const data = await res.json();
         setAnchorInfo(data);
@@ -64,7 +65,7 @@ export default function PublicVerify() {
     setResult(null);
 
     try {
-      const res = await fetch(`/api/verify/${targetCode}`);
+      const res = await fetch(`${API_URL}/api/verify/${targetCode}`);
       
       if (res.status === 404) {
         setError('No certificate found with this code.');
@@ -85,7 +86,7 @@ export default function PublicVerify() {
   const downloadCertificate = async () => {
     if (!result) return;
     try {
-      const res = await fetch(`/api/certificate`, {
+      const res = await fetch(`${API_URL}/api/certificate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -340,9 +341,13 @@ export default function PublicVerify() {
               <div className="w-20 h-20 bg-red-100 dark:bg-red-900/20 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-red-500/10">
                 <XCircle size={40} />
               </div>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">This certificate code was not found.</h3>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">
+                {error === 'No certificate found with this code.' ? 'This certificate code was not found.' : 'Verification Server Offline'}
+              </h3>
               <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto font-medium">
-                If you believe this is an error, please contact the submitter or verify the code format.
+                {error === 'No certificate found with this code.' 
+                  ? 'If you believe this is an error, please contact the submitter or verify the code format.' 
+                  : 'We were unable to reach the verification server. Please verify if the API server is running and accessible.'}
               </p>
             </div>
           ) : (

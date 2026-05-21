@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_URL from '../lib/apiUrl.js';
 import {
   FileText,
   Download,
@@ -33,7 +34,7 @@ export default function Certificates() {
       if (!user?.id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/records?user_id=${user.id}`);
+        const response = await fetch(`${API_URL}/api/records?user_id=${user.id}`);
         if (!response.ok) throw new Error("Failed to fetch ledger records");
         const data = await response.json();
         
@@ -59,7 +60,7 @@ export default function Certificates() {
 
   const downloadCertificate = async (record) => {
     try {
-      const res = await fetch(`/api/certificate`, {
+      const res = await fetch(`${API_URL}/api/certificate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -158,7 +159,7 @@ export default function Certificates() {
             placeholder="Search certificates..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-blue-600 dark:text-white transition"
+            className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-blue-600 dark:text-white transition"
           />
         </div>
       </div>
@@ -166,7 +167,7 @@ export default function Certificates() {
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border border-gray-100 dark:border-gray-700 space-y-4">
+            <div key={i} className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-150 dark:border-gray-800 space-y-4">
               <Skeleton height="12rem" className="rounded-2xl" />
               <Skeleton width="60%" height="1.5rem" />
               <Skeleton width="40%" height="1rem" />
@@ -180,7 +181,7 @@ export default function Certificates() {
             return (
               <div
                 key={idx}
-                className="group bg-white dark:bg-gray-800 p-4 md:p-5 rounded-[2rem] border border-gray-100 dark:border-gray-700 shadow-xl shadow-blue-900/5 hover:shadow-2xl hover:shadow-blue-500/15 hover:-translate-y-2 hover:scale-[1.02] transition-all duration-500 relative overflow-hidden"
+                className="group bg-white dark:bg-gray-900 p-4 md:p-5 rounded-[2rem] border border-gray-150 dark:border-gray-800 shadow-xl shadow-blue-900/5 hover:shadow-2xl hover:shadow-blue-500/15 hover:-translate-y-2 hover:scale-[1.02] transition-all duration-500 relative overflow-hidden"
               >
                 {/* Card Header/Preview Area */}
                 <div className={`aspect-video mb-4 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed transition-all duration-500 group-hover:border-solid ${fileInfo.color} ${fileInfo.border}`}>
@@ -208,7 +209,7 @@ export default function Certificates() {
                     </div>
                     <button
                       onClick={() => setSelectedRecord(record)}
-                      className="p-2 bg-gray-50 dark:bg-gray-900 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg border border-gray-100 dark:border-gray-700 transition shadow-sm hover:scale-105 active:scale-95"
+                      className="p-2 bg-gray-50 dark:bg-gray-950 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg border border-gray-150 dark:border-gray-800 transition shadow-sm hover:scale-105 active:scale-95"
                     >
                       <Info className="w-4 h-4" />
                     </button>
@@ -234,8 +235,8 @@ export default function Certificates() {
           })}
         </div>
       ) : (
-        <div className="py-24 text-center bg-white dark:bg-gray-800 rounded-[3rem] border border-gray-100 dark:border-gray-700 shadow-sm">
-          <div className="w-20 h-20 bg-gray-50 dark:bg-gray-900 rounded-3xl flex items-center justify-center mx-auto mb-6">
+        <div className="py-24 text-center bg-white dark:bg-gray-900 rounded-[3rem] border border-gray-150 dark:border-gray-800 shadow-sm">
+          <div className="w-20 h-20 bg-gray-50 dark:bg-gray-950 rounded-3xl flex items-center justify-center mx-auto mb-6">
             <Award className="w-10 h-10 text-gray-200 dark:text-gray-700" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">No certificates yet</h2>
@@ -287,12 +288,12 @@ export default function Certificates() {
       {selectedRecord && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setSelectedRecord(null)}></div>
-          <div className="bg-white dark:bg-gray-800 w-full max-w-xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-200 border border-white/10">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/50 px-8">
+          <div className="bg-white dark:bg-gray-900 w-full max-w-xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-150 dark:border-gray-800">
+            <div className="p-6 border-b border-gray-150 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/50 px-8">
               <h3 className="font-bold text-xl text-gray-900 dark:text-white">Certificate Audit</h3>
               <button
                 onClick={() => setSelectedRecord(null)}
-                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition text-gray-500"
+                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-850 rounded-full transition text-gray-500"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -300,14 +301,14 @@ export default function Certificates() {
 
             <div className="p-8 space-y-6">
               <div className="space-y-4">
-                <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <div className="bg-gray-50/50 dark:bg-gray-950/40 p-5 rounded-2xl border border-gray-150 dark:border-gray-800">
                   <p className="text-xs uppercase font-bold tracking-widest text-gray-400 mb-2">Authenticated Owner</p>
                   <p className="text-gray-900 dark:text-white font-bold text-lg flex items-center gap-2">
                     {selectedRecord.student_name} <ShieldCheck className="w-4 h-4 text-green-500" />
                   </p>
                 </div>
 
-                <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <div className="bg-gray-50/50 dark:bg-gray-950/40 p-5 rounded-2xl border border-gray-150 dark:border-gray-800">
                   <p className="text-xs uppercase font-bold tracking-widest text-gray-400 mb-2 font-mono">Immutable Hash (SHA3-256)</p>
                   <div className="flex items-center gap-3">
                     <Fingerprint className="w-5 h-5 text-blue-500 shrink-0" />
@@ -318,13 +319,13 @@ export default function Certificates() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+                  <div className="bg-gray-50/50 dark:bg-gray-950/40 p-5 rounded-2xl border border-gray-150 dark:border-gray-800">
                     <p className="text-xs uppercase font-bold tracking-widest text-gray-400 mb-1">Timestamp</p>
                     <p className="text-gray-900 dark:text-white font-bold text-xs truncate">
                       {formatDate(selectedRecord.submitted_at)}
                     </p>
                   </div>
-                  <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+                  <div className="bg-gray-50/50 dark:bg-gray-950/40 p-5 rounded-2xl border border-gray-150 dark:border-gray-800">
                     <p className="text-xs uppercase font-bold tracking-widest text-gray-400 mb-1">Verification Code</p>
                     <p className="text-gray-900 dark:text-white font-bold text-xs truncate">
                       {selectedRecord.verification_code}

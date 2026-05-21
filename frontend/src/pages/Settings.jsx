@@ -82,7 +82,7 @@ export default function Settings() {
             <Moon className="w-5 h-5 text-blue-600" />
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400">Appearance</h2>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl shadow-blue-900/5 border border-gray-100 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-xl shadow-blue-900/5 border border-gray-150 dark:border-gray-800">
             <Toggle 
               label="Dark Mode" 
               description="Switch between light and dark themes"
@@ -90,7 +90,7 @@ export default function Settings() {
               onChange={toggleTheme} 
             />
             
-            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-700">
+            <div className="mt-6 p-4 bg-gray-50/50 dark:bg-gray-950/40 rounded-2xl border border-gray-150 dark:border-gray-800/60">
               <p className="text-xs uppercase font-bold tracking-widest text-gray-400 mb-3">Theme Preview</p>
               <div className="flex gap-4">
                 <div className="flex-1 h-20 rounded-xl bg-white border border-gray-200 shadow-sm flex flex-col p-2 gap-1">
@@ -98,10 +98,10 @@ export default function Settings() {
                   <div className="w-full h-1 bg-gray-100 rounded-full"></div>
                   <div className="w-2/3 h-1 bg-gray-100 rounded-full"></div>
                 </div>
-                <div className="flex-1 h-20 rounded-xl bg-gray-800 border border-gray-700 shadow-sm flex flex-col p-2 gap-1">
+                <div className="flex-1 h-20 rounded-xl bg-gray-900 border border-gray-800 shadow-sm flex flex-col p-2 gap-1">
                   <div className="w-8 h-2 bg-blue-500 rounded-full"></div>
-                  <div className="w-full h-1 bg-gray-700 rounded-full"></div>
-                  <div className="w-2/3 h-1 bg-gray-700 rounded-full"></div>
+                  <div className="w-full h-1 bg-gray-750 rounded-full"></div>
+                  <div className="w-2/3 h-1 bg-gray-750 rounded-full"></div>
                 </div>
               </div>
             </div>
@@ -114,7 +114,7 @@ export default function Settings() {
             <Bell className="w-5 h-5 text-orange-500" />
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400">Notifications</h2>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl shadow-blue-900/5 border border-gray-100 dark:border-gray-700 space-y-1">
+          <div className="bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-xl shadow-blue-900/5 border border-gray-150 dark:border-gray-800 space-y-1">
             <Toggle 
               label="In-app Notifications" 
               description="Enable the notification bell dropdown"
@@ -147,11 +147,11 @@ export default function Settings() {
             <User className="w-5 h-5 text-purple-500" />
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400">Account & Data</h2>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl shadow-blue-900/5 border border-gray-100 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-xl shadow-blue-900/5 border border-gray-150 dark:border-gray-800">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
               <div className="space-y-6">
                 <div>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-950/40 rounded-2xl border border-gray-150 dark:border-gray-800/60">
                     <div className="flex items-center gap-3">
                       <Smartphone className="w-5 h-5 text-gray-400" />
                       <span className="text-gray-900 dark:text-white font-bold">{user?.email}</span>
@@ -177,7 +177,7 @@ export default function Settings() {
               <div className="space-y-4">
                 <button 
                   onClick={() => { clearAll(); toast.success("Notification history cleared"); }}
-                  className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-900/50 transition group"
+                  className="w-full flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-950/40 rounded-2xl border border-gray-150 dark:border-gray-800/60 hover:border-blue-200 dark:hover:border-blue-900/50 transition group"
                 >
                   <div className="flex items-center gap-3">
                     <Trash2 className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
@@ -188,7 +188,7 @@ export default function Settings() {
 
                 <button 
                   onClick={handleClearCache}
-                  className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-900/50 transition group"
+                  className="w-full flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-950/40 rounded-2xl border border-gray-150 dark:border-gray-800/60 hover:border-red-200 dark:hover:border-red-900/50 transition group"
                 >
                   <div className="flex items-center gap-3">
                     <Trash2 className="w-5 h-5 text-gray-400 group-hover:text-red-500 transition-colors" />
@@ -207,7 +207,7 @@ export default function Settings() {
             <Info className="w-5 h-5 text-emerald-500" />
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400">About Vouch</h2>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl shadow-blue-900/5 border border-gray-100 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-xl shadow-blue-900/5 border border-gray-150 dark:border-gray-800">
             <div className="flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="flex items-center gap-6">
                 <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">

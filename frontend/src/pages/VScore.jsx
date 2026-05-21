@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_URL from '../lib/apiUrl.js';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
 import VScoreHistory from './VScoreHistory';
@@ -20,7 +21,7 @@ export default function VScore() {
       if (!user?.id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/records?user_id=${user.id}`);
+        const response = await fetch(`${API_URL}/api/records?user_id=${user.id}`);
         if (!response.ok) throw new Error("Failed to fetch records");
         const data = await response.json();
         const records = data.records || [];

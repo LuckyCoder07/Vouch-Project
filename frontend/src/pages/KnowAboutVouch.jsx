@@ -1,5 +1,6 @@
 import API_URL from '../lib/apiUrl.js';
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   ShieldCheck, 
   HelpCircle, 
@@ -111,11 +112,29 @@ export default function KnowAboutVouch() {
         <p className="text-xl text-gray-500 dark:text-gray-400 max-w-3xl mx-auto leading-relaxed">
           Vouch is more than a tool—it's a cryptographic standard for proving code ownership and integrity in an era of rapid AI generation and digital duplication.
         </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+          <Link
+            to="/how-it-works"
+            className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/25 transition active:scale-[0.98] w-full sm:w-auto"
+          >
+            See How it Works
+          </Link>
+          <a
+            href="#faq"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById('faq-section')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="inline-flex items-center justify-center px-6 py-3 bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-850 rounded-xl font-bold text-sm shadow-sm transition w-full sm:w-auto"
+          >
+            Read FAQs
+          </a>
+        </div>
       </div>
 
       {/* Philosophy Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-xl shadow-blue-900/5">
+        <div className="card p-8 rounded-[2.5rem] shadow-xl shadow-blue-900/5">
           <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">
             <ShieldCheck size={24} />
           </div>
@@ -125,7 +144,7 @@ export default function KnowAboutVouch() {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-xl shadow-blue-900/5">
+        <div className="card p-8 rounded-[2.5rem] shadow-xl shadow-blue-900/5">
           <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/20">
             <Cpu size={24} />
           </div>
@@ -135,7 +154,7 @@ export default function KnowAboutVouch() {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-xl shadow-blue-900/5">
+        <div className="card p-8 rounded-[2.5rem] shadow-xl shadow-blue-900/5">
           <div className="w-12 h-12 bg-purple-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20">
             <Globe size={24} />
           </div>
@@ -147,7 +166,7 @@ export default function KnowAboutVouch() {
       </div>
 
       {/* Searchable FAQ Section */}
-      <div className="space-y-10 pt-10">
+      <div id="faq-section" className="space-y-10 pt-10">
         <div className="text-center space-y-4">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Knowledge Base</h2>
           <div className="relative max-w-xl mx-auto">
@@ -157,7 +176,7 @@ export default function KnowAboutVouch() {
               placeholder="Search all FAQs..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl shadow-blue-900/5 outline-none focus:ring-2 focus:ring-blue-600 dark:text-white transition"
+              className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl shadow-blue-900/5 outline-none focus:ring-2 focus:ring-blue-600 dark:text-white transition"
             />
           </div>
         </div>
@@ -166,7 +185,7 @@ export default function KnowAboutVouch() {
           {filteredFaqs.map((faq, idx) => (
             <div 
               key={idx} 
-              className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 rounded-3xl overflow-hidden shadow-sm transition-all duration-200"
+              className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl overflow-hidden shadow-sm transition-all duration-200"
             >
               <button 
                 onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
@@ -238,7 +257,7 @@ export default function KnowAboutVouch() {
 
       {/* Developers of Vouch Section */}
       <div className="max-w-4xl mx-auto pt-10">
-        <div className="bg-white dark:bg-gray-800 p-8 md:p-12 rounded-[3rem] border border-gray-100 dark:border-gray-700 shadow-2xl shadow-blue-900/10 hover:shadow-blue-500/10 transition-all duration-500 group/container relative overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 p-8 md:p-12 rounded-[3rem] border border-gray-100 dark:border-gray-800 shadow-2xl shadow-blue-900/10 hover:shadow-blue-500/10 transition-all duration-500 group/container relative overflow-hidden">
           {/* Cool hover gradient background */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-transparent to-transparent dark:from-blue-900/20 dark:via-transparent dark:to-transparent opacity-0 group-hover/container:opacity-100 transition-opacity duration-700"></div>
           
@@ -256,7 +275,7 @@ export default function KnowAboutVouch() {
             ].map((dev, idx) => (
               <div 
                 key={idx} 
-                className="p-4 rounded-3xl border border-transparent hover:border-gray-100 dark:hover:border-gray-700 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50 flex items-center justify-between group transition-all duration-300"
+                className="p-4 rounded-3xl border border-transparent hover:border-gray-100 dark:hover:border-gray-800 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/50 flex items-center justify-between group transition-all duration-300"
               >
                 <div className="flex items-center gap-5">
                   <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black text-lg shadow-inner group-hover:scale-105 transition-transform duration-300">

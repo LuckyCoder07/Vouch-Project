@@ -29,7 +29,7 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-vouch-light dark:bg-vouch-dark transition-colors duration-500">
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-500">
       <Sidebar 
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -47,7 +47,7 @@ export default function DashboardLayout() {
 
       {/* Main Content Area */}
       <div 
-        className="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out ml-0"
+        className="relative flex flex-col flex-1 h-screen overflow-hidden transition-all duration-300 ease-in-out ml-0"
       >
         <Navbar 
           toggleSidebar={toggleSidebar} 
@@ -60,7 +60,7 @@ export default function DashboardLayout() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
-          className="p-4 md:p-6 2xl:p-10 flex-1 flex flex-col"
+          className="p-4 md:p-6 2xl:p-10 flex-1 overflow-y-auto overflow-x-hidden flex flex-col"
         >
           <Outlet />
         </motion.main>

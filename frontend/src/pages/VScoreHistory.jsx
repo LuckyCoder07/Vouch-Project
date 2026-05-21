@@ -43,7 +43,7 @@ const getRelativeTime = (ts) => {
 };
 
 const computeEntryPoints = (record) => {
-  const ext = getFileExt(record.File_Name);
+  const ext = getFileExt(record.file_name || record.File_Name);
   const d = new Date(record.submitted_at);
   const now = new Date();
   const ageInDays = isNaN(d) ? 0 : Math.floor((now - d) / 86400000);
@@ -92,7 +92,7 @@ export default function VScoreHistory({ userRecords, vScore, rank, isLoading, li
   const navigate = useNavigate();
 
   const sortedRecords = useMemo(() => {
-    return [...(userRecords || [])].sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+    return [...(userRecords || [])].sort((a, b) => new Date(b.submitted_at || b.Timestamp) - new Date(a.submitted_at || a.Timestamp));
   }, [userRecords]);
 
   const cumulativeHistory = useMemo(() => {
@@ -119,7 +119,7 @@ export default function VScoreHistory({ userRecords, vScore, rank, isLoading, li
   const uniqueEntries = new Set(userRecords?.map(r => r.structural_hash)).size;
   const avgPoints = uniqueEntries > 0 ? Math.round(vScore / uniqueEntries) : 0;
   const extCounts = (userRecords || []).reduce((acc, r) => {
-    const ext = getFileExt(r.File_Name);
+    const ext = getFileExt(r.file_name || r.File_Name);
     acc[ext] = (acc[ext] || 0) + 1;
     return acc;
   }, {});
@@ -150,7 +150,7 @@ export default function VScoreHistory({ userRecords, vScore, rank, isLoading, li
           )}
           <button
             onClick={() => navigate('/docs/vscore')}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 text-sm font-bold border border-gray-200 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all group"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-900 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 text-sm font-bold border border-gray-150 dark:border-gray-800 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all group"
           >
             <BookOpen className="w-4 h-4" />
             About V-Score
@@ -170,7 +170,7 @@ export default function VScoreHistory({ userRecords, vScore, rank, isLoading, li
           ].map((stat, i) => {
             const StatIcon = stat.icon;
             return (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm">
+              <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-150 dark:border-gray-800 p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
                   <StatIcon className={`w-4 h-4 ${stat.color}`} />
                   <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{stat.label}</span>
@@ -187,12 +187,12 @@ export default function VScoreHistory({ userRecords, vScore, rank, isLoading, li
       )}
 
       {/* Git-style timeline */}
-      <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-150 dark:border-gray-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <GitCommit className="w-4 h-4 text-gray-400" />
             <span className="font-bold text-gray-900 dark:text-white text-sm">Commit History</span>
-            <span className="ml-1 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs font-bold">{totalEntries}</span>
+            <span className="ml-1 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-950 text-gray-500 dark:text-gray-400 text-xs font-bold border border-gray-150 dark:border-gray-800">{totalEntries}</span>
           </div>
           <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">Sorted by latest first</span>
         </div>
@@ -208,13 +208,13 @@ export default function VScoreHistory({ userRecords, vScore, rank, isLoading, li
             <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Go to Dashboard to vouch your first file.</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
+          <div className="divide-y divide-gray-50 dark:divide-gray-800/40">
             {cumulativeHistory.map((entry, i) => {
               const ext = getFileExt(entry.File_Name);
               const extStyle = getExtColor(ext);
               const isFirst = i === cumulativeHistory.length - 1;
               return (
-                <div key={i} className="px-6 py-5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group">
+                <div key={i} className="px-6 py-5 hover:bg-gray-50 dark:hover:bg-gray-900/40 transition-colors group">
                   <div className="flex items-start gap-4">
 
                     {/* Timeline dot */}
@@ -226,7 +226,7 @@ export default function VScoreHistory({ userRecords, vScore, rank, isLoading, li
                         }
                       </div>
                       {i < cumulativeHistory.length - 1 && (
-                        <div className="w-px flex-1 min-h-[1.5rem] bg-gray-200 dark:bg-gray-700 mt-1" />
+                        <div className="w-px flex-1 min-h-[1.5rem] bg-gray-200 dark:bg-gray-800 mt-1" />
                       )}
                     </div>
 
@@ -242,7 +242,7 @@ export default function VScoreHistory({ userRecords, vScore, rank, isLoading, li
                         )}
                       </div>
 
-                      <p className="font-bold text-gray-900 dark:text-white text-sm truncate">{entry.File_Name || 'Unknown file'}</p>
+                      <p className="font-bold text-gray-900 dark:text-white text-sm truncate">{entry.file_name || entry.File_Name || 'Unknown file'}</p>
 
                       <div className="flex items-center gap-3 mt-1 flex-wrap">
                         <span className="text-xs font-mono text-gray-400 dark:text-gray-500">{entry.structural_hash ? entry.structural_hash.slice(0,16) + '...' : 'No hash'}</span>
