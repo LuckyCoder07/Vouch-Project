@@ -596,7 +596,17 @@ async def get_verify_code(verification_code: str):
         result = db.table("submissions").select("*").eq("verification_code", verification_code).execute()
         if not result.data:
             raise HTTPException(status_code=404, detail="Certificate not found")
-        return result.data[0]
+            
+        record = result.data[0]
+        return {
+            "status": "verified",
+            "structural_hash": record.get("structural_hash"),
+            "student_name": record.get("student_name"),
+            "file_name": record.get("file_name"),
+            "submitted_at": record.get("submitted_at") or record.get("created_at"),
+            "verification_code": record.get("verification_code"),
+            "language": record.get("language")
+        }
     except HTTPException:
         raise
     except Exception as e:
