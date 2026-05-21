@@ -396,8 +396,13 @@ async def api_store(request: Request, req: StoreRequest, authorization: Optional
                 print(f"Warning: Profile auto-creation failed: {e}")
                 # We continue anyway, as the next insert will fail if FK is truly missing
         
-        # 2. Check for exact duplicates (Use 'db' service role to ensure we can see all records)
-        result = db.table("submissions").select("id").eq("raw_hash", req.raw_hash).execute()
+        # 2. Check for structural duplicates (Use 'db' service role to ensure we can see all records)
+        # Block only if the SAME user submits the same structural code.
+        if user_id:
+            result = db.table("submissions").select("id").eq("structural_hash", req.structural_hash).eq("user_id", user_id).execute()
+        else:
+            result = db.table("submissions").select("id").eq("structural_hash", req.structural_hash).execute()
+            
         if result.data:
             raise HTTPException(status_code=409, detail="Already recorded in the ledger.")
 
@@ -416,7 +421,8 @@ async def api_store(request: Request, req: StoreRequest, authorization: Optional
             "user_id": user_id,
             "verification_code": verification_code,
             "submitted_at": submitted_at,
-            "org_id": req.org_id
+            "org_id": req.org_id,
+            "assignment_id": req.assignment_id
         }).execute()
         inserted_id = insert_res.data[0]['id']
         

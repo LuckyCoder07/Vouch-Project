@@ -18,7 +18,8 @@ import {
   ChevronRight,
   FileBadge,
   Settings,
-  Info
+  Info,
+  BookOpen
 } from 'lucide-react';
 
 const GROUPS = [
@@ -50,6 +51,12 @@ const GROUPS = [
       { name: 'Settings', icon: Settings, path: '/settings' },
       { name: 'How It Works', icon: HelpCircle, path: '/how-it-works' },
       { name: 'Know About Vouch', icon: Info, path: '/know-about-vouch' }
+    ]
+  },
+  {
+    title: 'Documentation',
+    items: [
+      { name: 'Technical Docs', icon: BookOpen, path: '/docs/code-normalization' }
     ]
   }
 ];

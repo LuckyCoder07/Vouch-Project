@@ -59,6 +59,10 @@ class PlagiarismDetector:
         if org_id:
             query = query.eq('org_id', org_id)
 
+        # Filter to same assignment if provided
+        if assignment_id:
+            query = query.eq('assignment_id', assignment_id)
+
         matches = query.execute().data
 
         if not matches:
