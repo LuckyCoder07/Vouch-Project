@@ -294,6 +294,14 @@ async def api_hash(request: Request, file: UploadFile = File(...), user_id: Opti
         if file.filename:
             _, ext = os.path.splitext(file.filename)
             suffix = ext.lower()
+            SUPPORTED_EXTENSIONS = {'.py', '.java', '.cpp', '.txt', '.c', '.h'}
+            if ext.lower() not in SUPPORTED_EXTENSIONS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unsupported file type '{ext}'. Vouch only supports: .py, .java, .cpp, .c, .txt files."
+                )
+        else:
+            raise HTTPException(status_code=400, detail="File must have a name with a supported extension.")
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             tmp.write(await file.read())
@@ -674,8 +682,8 @@ async def api_anchor_trigger():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
-def health():
-    return {"status": "ok"}
+def health_check():
+    return {"status": "ok", "service": "vouch-backend"}
 
 @app.get("/api/ping")
 async def api_ping():
@@ -1312,7 +1320,7 @@ async def api_v1_vouch(req: dict, x_api_key: str = Header(...)):
         db = require_supabase()
         
         # Check for duplicates
-        existing = db.table("submissions").select("verification_code, submitted_at").eq("structural_hash", req.get('structural_hash')).execute()
+        existing = db.table("submissions").select("verification_code, submitted_at").eq("raw_hash", req.get('raw_hash')).execute()
         if existing.data:
             raise HTTPException(status_code=409, detail="Already recorded in the ledger.")
             

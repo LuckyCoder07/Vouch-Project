@@ -113,16 +113,16 @@ class BatchProcessor:
                         # Check for duplicate
                         existing = (supabase.table('submissions')
                                     .select('id, verification_code')
-                                    .eq('structural_hash', structural_hash)
+                                    .eq('raw_hash', raw_hash)
                                     .execute())
 
                         if existing.data:
                             results.append({
                                 'file_name': filename,
                                 'status': 'duplicate',
-                                'structural_hash': structural_hash,
+                                'raw_hash': raw_hash,
                                 'verification_code': existing.data[0]['verification_code'],
-                                'reason': 'Already in ledger'
+                                'reason': 'Exact file already in ledger'
                             })
                             successful += 1
                             continue

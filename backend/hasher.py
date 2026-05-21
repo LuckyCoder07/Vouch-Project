@@ -157,21 +157,77 @@ class CodeHasher:
     def _canonicalize_python(self, source: str) -> str:
         try:
             tree = ast.parse(source)
-            transformer = ASTAnonymizer()
-            new_tree = transformer.visit(tree)
-            ast.fix_missing_locations(new_tree)
-            return ast.unparse(new_tree)
-        except Exception:
-            # Fall back to stripping comments and whitespace if parsing fails
-            cleaned = self._strip_block_and_line_comments(source)
-            return " ".join(cleaned.split())
+            # Normalize: replace all variable/function/arg names with sequential placeholders
+            # This makes x = 10 and user_age = 10 produce the same structural hash
+            name_map = {}
+            counter = [0]
+
+            def get_normalized(original_name):
+                if original_name not in name_map:
+                    name_map[original_name] = f'var_{counter[0]}'
+                    counter[0] += 1
+                return name_map[original_name]
+
+            class NameNormalizer(ast.NodeTransformer):
+                def visit_Name(self, node):
+                    # Normalize variable references but NOT built-ins
+                    BUILTINS = {
+                        'True', 'False', 'None', 'print', 'len', 'range',
+                        'int', 'str', 'float', 'list', 'dict', 'set', 'tuple',
+                        'type', 'isinstance', 'hasattr', 'getattr', 'setattr',
+                        'open', 'input', 'enumerate', 'zip', 'map', 'filter',
+                        'sorted', 'reversed', 'sum', 'min', 'max', 'abs',
+                        'round', 'super', 'object', 'Exception', 'self', 'cls',
+                        '__init__', '__name__', '__main__'
+                    }
+                    if node.id not in BUILTINS:
+                        node.id = get_normalized(node.id)
+                    return node
+
+                def visit_arg(self, node):
+                    # Normalize function argument names
+                    BUILTINS = {'self', 'cls'}
+                    if node.arg not in BUILTINS:
+                        node.arg = get_normalized(node.arg)
+                    return node
+
+                def visit_FunctionDef(self, node):
+                    # Normalize function names
+                    BUILTINS = {'__init__', '__str__', '__repr__', '__len__',
+                                '__main__', 'main', 'setUp', 'tearDown'}
+                    if node.name not in BUILTINS:
+                        node.name = get_normalized(node.name)
+                    self.generic_visit(node)
+                    return node
+
+                def visit_AsyncFunctionDef(self, node):
+                    return self.visit_FunctionDef(node)
+
+                def visit_ClassDef(self, node):
+                    node.name = get_normalized(node.name)
+                    self.generic_visit(node)
+                    return node
+
+            normalized_tree = NameNormalizer().visit(tree)
+            return ast.dump(normalized_tree, annotate_fields=True, include_attributes=False)
+        except SyntaxError:
+            # If parsing fails (syntax error in source), fall back to comment-stripped text
+            cleaned = re.sub(r'#.*?$', '', source, flags=re.M)
+            return ' '.join(cleaned.split())
 
     @staticmethod
     def _strip_block_and_line_comments(source: str) -> str:
-        source = re.sub(r"/\*.*?\*/", "", source, flags=re.S)
-        source = re.sub(r"//.*?$", "", source, flags=re.M)
-        source = re.sub(r"#.*?$", "", source, flags=re.M)
-        return source
+        # Remove block comments /* ... */
+        source = re.sub(r'/\*.*?\*/', '', source, flags=re.S)
+        # Remove line comments // ...
+        source = re.sub(r'//.*?$', '', source, flags=re.M)
+        # Remove Python/shell line comments # ...
+        source = re.sub(r'#.*?$', '', source, flags=re.M)
+        # Remove string literals to prevent false positives in structure
+        # (keeps structure, removes content)
+        source = re.sub(r'"(?:[^"\\]|\\.)*"', '"__STR__"', source)
+        source = re.sub(r"'(?:[^'\\]|\\.)*'", '"__STR__"', source)
+        return ' '.join(source.split())
 
     def _canonicalize_regex(self, source: str) -> str:
         # 1. Strip comments
