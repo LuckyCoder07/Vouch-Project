@@ -60,11 +60,7 @@ class CertificateGenerator:
         # Rotate text for diagonal watermark using FPDF2 transformations
         with pdf.rotation(angle=45, x=105, y=148):
             # Center the watermark roughly
-            pdf.text(x=20, y=160, text="VOUCH NOTARY")
-            
-        pdf.set_font("Arial", "B", 120)
-        with pdf.rotation(angle=-45, x=105, y=148):
-            pdf.text(x=20, y=160, text="ORIGINAL")
+            pdf.text(x=50, y=160, text="VOUCH")
 
     def _header(self, pdf: FPDF) -> None:
         if self.logo_path and os.path.exists(self.logo_path):
@@ -91,7 +87,7 @@ class CertificateGenerator:
         pdf.line(50, pdf.get_y()+2, 160, pdf.get_y()+2)
         pdf.ln(15)
 
-    def _body(self, pdf: FPDF, student_name: str) -> None:
+    def _body(self, pdf: FPDF, student_name: str, verification_code: str) -> None:
         pdf.set_text_color(80, 85, 90)
         pdf.set_font("Arial", "I", 14)
         pdf.cell(0, 10, "This digital certificate formally recognizes that the source code submitted by", ln=1, align="C")
@@ -102,7 +98,7 @@ class CertificateGenerator:
         pdf.cell(0, 14, student_name, ln=1, align="C")
         
         # Profile UID block
-        uid = f"UID: VCH-{abs(hash(student_name)) % 100000000:08d}"
+        uid = f"Verification Code: {verification_code}"
         pdf.set_font("Courier", "B", 10)
         pdf.set_text_color(*_SECONDARY_COLOR)
         pdf.cell(0, 6, uid, ln=1, align="C")
@@ -196,6 +192,7 @@ class CertificateGenerator:
         timestamp:         str        = "",
         chain_hash:        str        = "",
         verification_link: str | None = None,
+        verification_code: str        = "N/A",
         output_dir:        str | None = None,
     ) -> str:
         if not student_name.strip():
@@ -213,7 +210,7 @@ class CertificateGenerator:
         self._watermark(pdf)
         self._draw_formal_border(pdf)
         self._header(pdf)
-        self._body(pdf, student_name.strip())
+        self._body(pdf, student_name.strip(), verification_code)
         
         # Provide fallback link if not injected
         link = verification_link or "https://vouch.example.com/verify"
@@ -242,6 +239,7 @@ if __name__ == "__main__":
             file_name         = "blockchain_core.cpp",
             file_hash         = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             timestamp         = "2026-04-21 14:30:00",
+            verification_code = "VCH-TEST-1234",
         )
         print(f"Premium Certificate saved successfully: {os.path.abspath(path)}")
     except VouchCertError as e:

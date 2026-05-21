@@ -463,6 +463,7 @@ async def api_store(request: Request, req: StoreRequest, authorization: Optional
                 file_hash=req.structural_hash,
                 timestamp=submitted_at,
                 verification_link=f"{frontend_url}/verify/{verification_code}",
+                verification_code=verification_code,
                 output_dir="/tmp"
             )
         except Exception as e:
@@ -614,6 +615,7 @@ async def api_certificate(req: CertificateRequest):
                 file_hash=req.structural_hash,
                 timestamp=req.submitted_at,
                 verification_link=verification_link,
+                verification_code=req.verification_code,
                 output_dir=tmp_dir
             )
             

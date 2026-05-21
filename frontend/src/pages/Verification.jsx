@@ -159,7 +159,7 @@ export default function Verification() {
 
   const handleVerifyCode = (codeToVerify = verificationCode) => {
     if (!codeToVerify) return;
-    const cleanCode = codeToVerify.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+    const cleanCode = formatCodeInput(codeToVerify);
     
     const headers = { 'Content-Type': 'application/json' };
     if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
