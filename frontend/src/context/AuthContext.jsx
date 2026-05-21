@@ -58,6 +58,28 @@ export default function AuthProvider({ children }) {
     async function initializeAuth() {
       if (logoutInProgress) return;
       try {
+        // Manually intercept the OAuth hash to guarantee session creation on slow or buggy clients
+        if (window.location.hash.includes('access_token')) {
+          console.log("Intercepting OAuth hash directly...");
+          const hashStr = window.location.hash.substring(1);
+          // Supabase uses & to separate hash params
+          const params = new URLSearchParams(hashStr);
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+          
+          if (accessToken && refreshToken) {
+            console.log("Manually setting session from hash tokens");
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken
+            });
+            if (error) console.error("Manual setSession error:", error);
+            
+            // Clear the hash so we don't parse it again, but keep the path
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          }
+        }
+
         const currentSession = await getSession();
         if (mounted) {
           if (currentSession) {
