@@ -71,7 +71,11 @@ export default function AuthProvider({ children }) {
         if (mounted) setAuthError(error.message);
       } finally {
         if (mounted) {
-          setLoading(false);
+          // If URL has an access token, wait for onAuthStateChange to finish parsing it
+          // before we turn off the loading screen and allow React Router to redirect.
+          if (!window.location.hash.includes('access_token')) {
+            setLoading(false);
+          }
         }
       }
     }
@@ -85,10 +89,12 @@ export default function AuthProvider({ children }) {
         setSession(currentSession);
         setUser(currentSession.user);
         await fetchProfile(currentSession.user.id, currentSession.user);
+        if (mounted) setLoading(false);
       } else if (event === 'SIGNED_OUT') {
         setSession(null);
         setUser(null);
         setProfile(null);
+        if (mounted) setLoading(false);
       }
     });
 
