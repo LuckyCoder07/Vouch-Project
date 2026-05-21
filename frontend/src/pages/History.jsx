@@ -200,7 +200,7 @@ export default function History() {
   }, [records]);
 
   return (
-    <div className="flex h-full relative overflow-hidden animate-in fade-in duration-300 pb-20">
+    <div className="flex h-full relative overflow-hidden animate-in fade-in duration-300">
       
       {/* MAIN CONTENT AREA */}
       <div className={`flex-1 transition-all duration-300 ${selectedRecord ? 'pr-96' : ''} overflow-y-auto w-full max-w-7xl mx-auto px-2 lg:px-4`}>
